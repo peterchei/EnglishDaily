@@ -32,8 +32,10 @@ Master common British workplace idioms used in London.
 ---
 
 ## 🔊 Pronunciation Guide / 語音指南
-You can find the audio recording for these words in the media archive:
-[February 8 Pronunciation Note](../../media/2026-02-08_pronunciation.mp3)
+Click below to play or download the audio recording:
+[▶️ Play February 8 Pronunciation Note](../../media/2026-02-08_pronunciation.mp3?raw=true)
+
+*(Tip: If it shows text instead of playing, click the "Download" or "View Raw" button on GitHub.)*
 
 ---
 
