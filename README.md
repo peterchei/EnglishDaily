@@ -1,44 +1,19 @@
-# ENGLISH DAILY
+# Master's English Learning Journey 🚀
 
-A personalized English learning platform that leverages an AI agent to generate daily 15-minute learning materials.
+Welcome to your daily English growth journal. This repository is managed by **Little Pretty A ✨** to track your progress and store our learning materials.
 
-## Project Overview
+## 📊 Progress Dashboard
 
-**ENGLISH DAILY** is designed to provide consistent, structured English learning through short, focused sessions. The project integrates with a personal AI agent that prepares and curates bite-sized learning content tailored for efficient language acquisition.
+- **Current Goal:** Master London Office Vocabulary & Native Flow.
+- **Current Vibe:** Expert 🧐
+- **Daily Streak:** 🔥 1 Day
+- **Last Updated:** 2026-02-08
 
-## Features
+## 📅 Quick Links
 
-- **15-Minute Learning Sessions**: Concise, focused learning materials optimized for busy schedules
-- **AI-Powered Content Generation**: Automated preparation of English learning materials by personal AI agent
-- **Daily Updates**: Fresh content delivered regularly to maintain learning momentum
-
-## Getting Started
-
-(To be updated by the user)
-
-## Project Structure
-
-(To be updated by the user)
-
-## Usage
-
-(To be updated by the user)
-
-## AI Agent Integration
-
-This project works with a personal AI agent responsible for:
-- Preparing daily learning materials
-- Curating content for 15-minute sessions
-- Ensuring variety and progressive difficulty
-
-## Contributing
-
-(To be updated by the user)
-
-## License
-
-(To be updated by the user)
+- **[Latest Lesson (Feb 8, 2026)](lessons/2026-02-08.md)**
+- **[Full Lesson Archive](lessons/)**
 
 ---
 
-*Last Updated: February 8, 2026*
+*“Success is the sum of small efforts, repeated day in and day out.”*
