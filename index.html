@@ -61,7 +61,6 @@
         .stat-value { font-size: 1.5rem; font-weight: bold; color: var(--success); }
         .stat-label { font-size: 0.8rem; color: var(--subtext); }
 
-        /* Navigation Tabs */
         .tabs {
             display: flex;
             gap: 10px;
@@ -97,16 +96,19 @@
             position: relative;
         }
         .word-item {
-            margin-bottom: 25px;
-            padding-bottom: 15px;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
             border-bottom: 1px solid #334155;
         }
         .word-item:last-child { border-bottom: none; }
         .word-header { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
-        .word-text { font-size: 1.5rem; font-weight: bold; color: #fff; }
+        .word-text { font-size: 1.8rem; font-weight: bold; color: #fff; }
         .word-type { color: var(--accent); font-style: italic; font-size: 0.9rem; }
         .word-pron { font-family: monospace; color: var(--success); background: #0004; padding: 2px 6px; border-radius: 4px; font-size: 0.9rem; }
         
+        .translation { color: var(--subtext); font-size: 0.95rem; margin-top: 5px; margin-bottom: 10px; }
+        .example-box { color: var(--subtext); border-left: 3px solid var(--accent); padding-left: 15px; font-style: italic; }
+
         .history-list { list-style: none; padding: 0; }
         .history-item {
             background: var(--card-bg);
@@ -176,7 +178,12 @@
                         <span class="word-type">Verb</span>
                         <span class="word-pron">/klɪŋ ɒn/</span>
                     </div>
-                    <p>To hold on tightly to something; to try very hard to keep a position.</p>
+                    <p>To hold on tightly to something; to try very hard to keep a position or a situation.</p>
+                    <div class="translation">廣東話：即係「死撐」或者「格硬留住」。通常用喺形容政治人物想保住個位，或者喺困難中堅持住。</div>
+                    <div class="example-box">
+                        "Despite the heavy losses, the team managed to <b>cling on</b> to their lead until the end."<br>
+                        「儘管損失慘重，球隊最後都成功<b>守住</b>咗領先優勢。」
+                    </div>
                 </div>
 
                 <div class="word-item">
@@ -186,6 +193,11 @@
                         <span class="word-pron">/ˈpɛrələs/</span>
                     </div>
                     <p>Full of danger or risk.</p>
+                    <div class="translation">廣東話：「險峻」、「非常危險」。比 "dangerous" 更加正式同埋程度更深。</div>
+                    <div class="example-box">
+                        "The hikers faced a <b>perilous</b> climb up the mountain during the storm."<br>
+                        「遠足人士喺暴風雨中面臨<b>險峻</b>嘅登山路程。」
+                    </div>
                 </div>
 
                 <div class="word-item">
@@ -195,6 +207,11 @@
                         <span class="word-pron">/rɪˈvjuː/</span>
                     </div>
                     <p>To examine or assess something again with the possibility of change.</p>
+                    <div class="translation">廣東話：「審視」、「檢討」或者「重新評估」。喺英國政府或者公司政策入面非常常用。</div>
+                    <div class="example-box">
+                        "The committee will <b>review</b> the policy next week."<br>
+                        「我哋喺使更多錢之前，需要<b>重新審視</b>下個預算。」
+                    </div>
                 </div>
 
                 <div class="section-title" style="margin-top: 40px; font-size: 1.2rem;">🔊 Audio Guide</div>
@@ -225,7 +242,7 @@
 
         <!-- MISSIONS SECTION -->
         <div id="missions" class="content-section">
-            <div class="section-title">🎯 Missions</div>
+            <div class="section-title">🎯 Your Missions</div>
             <div class="mission-item">
                 <b>Active</b>: Use "perilous" in a voice note.
             </div>
@@ -236,7 +253,7 @@
 
         <div class="agent-note" style="margin-top: 20px;">
             <b>Little Pretty A:</b><br>
-            "Welcome to the English Daily Hub! I've updated the page to be more inclusive for everyone. Let's learn together!"
+            "Welcome to the English Daily Hub! I've added the Cantonese explanations and detailed examples back in. Let's learn together!"
         </div>
     </div>
 
@@ -245,7 +262,8 @@
             document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             document.getElementById(tabId).classList.add('active');
-            event.target.classList.add('active');
+            // Fixed the active class on button
+            event.currentTarget.classList.add('active');
         }
     </script>
 </body>
