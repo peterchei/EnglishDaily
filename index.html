@@ -15,7 +15,7 @@
             --funny: #f59e0b;
         }
         body {
-            font-family: 'Segoe UI', sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: var(--bg);
             color: var(--text);
             margin: 0;
@@ -79,7 +79,7 @@
             overflow: hidden;
         }
         .lesson-card::before {
-            content: "NEW";
+            content: "LATEST";
             position: absolute;
             top: 15px;
             right: -30px;
@@ -102,11 +102,12 @@
         .word-pron { font-family: monospace; color: var(--success); background: #0004; padding: 4px 8px; border-radius: 6px; }
         .audio-player { margin-top: 15px; width: 100%; }
 
-        .mission-center {
-            background: linear-gradient(135deg, #1e293b, #0f172a);
+        .sidebar-card {
+            background: var(--card-bg);
             border-radius: 20px;
             padding: 25px;
-            border: 1px solid var(--funny);
+            margin-bottom: 20px;
+            border: 1px solid #334155;
         }
         .mission-item {
             background: #ffffff05;
@@ -115,8 +116,27 @@
             margin-bottom: 15px;
             border-left: 4px solid var(--funny);
         }
+        .history-list {
+            list-style: none;
+            padding: 0;
+        }
+        .history-item {
+            padding: 10px 0;
+            border-bottom: 1px solid #334155;
+        }
+        .history-item a {
+            color: var(--text);
+            text-decoration: none;
+            display: flex;
+            justify-content: space-between;
+            transition: color 0.2s;
+        }
+        .history-item a:hover {
+            color: var(--accent);
+        }
+        .history-date { font-size: 0.8rem; color: var(--subtext); }
+
         .agent-note {
-            margin-top: 30px;
             background: #3b82f615;
             padding: 20px;
             border-radius: 16px;
@@ -132,8 +152,8 @@
 <body>
     <div class="dashboard">
         <header>
-            <h1>🚀 Master's English Level Up</h1>
-            <p style="color: var(--subtext)">Day 2: "Political Turmoil & Perilous Paths"</p>
+            <h1>🚀 English Level Up</h1>
+            <p style="color: var(--subtext)">Master's Daily Progress Hub</p>
         </header>
 
         <div class="stats-bar">
@@ -146,14 +166,14 @@
                 <div class="stat-label">Daily Streak</div>
             </div>
             <div class="stat-card">
-                <div class="stat-value">Intermediate</div>
-                <div class="stat-label">Vibe Level</div>
+                <div class="stat-value">Active</div>
+                <div class="stat-label">Learning Status</div>
             </div>
         </div>
 
         <div class="main-grid">
             <div class="lessons-area">
-                <div class="section-title">📚 Today's Vocabulary</div>
+                <div class="section-title">📚 Current Lesson</div>
                 <div class="lesson-card">
                     <div style="color: var(--subtext); font-size: 0.8rem; margin-bottom: 20px;">FEBRUARY 9, 2026</div>
                     
@@ -202,17 +222,37 @@
             </div>
 
             <div class="sidebar-area">
-                <div class="section-title">🎯 Mission Center</div>
-                <div class="mission-center">
+                <div class="section-title">⏳ History</div>
+                <div class="sidebar-card">
+                    <ul class="history-list">
+                        <li class="history-item">
+                            <a href="lessons/2026-02/vocabulary_2026-02-09.md">
+                                <span>Day 2: Perilous</span>
+                                <span class="history-date">Feb 09</span>
+                            </a>
+                        </li>
+                        <li class="history-item">
+                            <a href="lessons/2026-02/vocabulary_2026-02-08.md">
+                                <span>Day 1: Punt</span>
+                                <span class="history-date">Feb 08</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="section-title">🎯 Missions</div>
+                <div class="sidebar-card">
                     <div class="mission-item">
-                        <b>Mission #2</b><br>
-                        Use "perilous" to describe something in London today!
+                        <b>Active</b>: Use "perilous" in a voice note.
+                    </div>
+                    <div class="mission-item" style="opacity: 0.5">
+                        <b>Completed</b>: Use "straightforward".
                     </div>
                 </div>
 
                 <div class="agent-note">
-                    <b>Little Pretty A's Notes:</b><br>
-                    "Master, I've updated your dashboard! You're now on a <b>2-day streak</b>. Your English is becoming more 'straightforward' every day! Keep it up!"
+                    <b>Little Pretty A:</b><br>
+                    "Master, I've added a <b>History</b> section! You can now browse all our previous lessons directly from here."
                 </div>
             </div>
         </div>
