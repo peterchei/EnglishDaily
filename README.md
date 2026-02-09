@@ -15,6 +15,7 @@ Welcome to your daily English growth journal. This repository is managed by **Li
 ## 📅 Monthly Lessons
 
 ### 2026 February
+- **[Feb 9: News from the BBC](lessons/2026-02/vocabulary_2026-02-09.md)**
 - **[Feb 8: Taking the Punt](lessons/2026-02/vocabulary_2026-02-08.md)**
 
 ---
