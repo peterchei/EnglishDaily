@@ -23,8 +23,9 @@ def get_lessons():
                     
                     with open(os.path.join(root, file), 'r', encoding='utf-8') as f:
                         content = f.read()
-                        first_word_match = re.search(r"\d+\.\s+\*\*(.*?)\*\*", content)
-                        title = first_word_match.group(1) if first_word_match else date_str
+                        # Match the first word in bold
+                        name_match = re.search(r"\d+\.\s+\*\*(.*?)\*\*", content)
+                        title = name_match.group(1) if name_match else date_str
                     
                     lessons.append({
                         "date": date_str,
@@ -37,31 +38,33 @@ def get_lessons():
     return lessons
 
 def parse_markdown_content(content):
-    # Simplified splitting to avoid complex regex
-    items = content.split('### ')[1:] # split by h3 headers
-    if not items:
-        # Try splitting by "1. ", "2. " etc if no h3
-        items = re.split(r'\d+\.\s+\*\*', content)[1:]
-
+    # Split the content into blocks for each word
+    # Each block starts with "1. **Word**", "2. **Word**", etc.
+    blocks = re.split(r'\n(?=\d+\.\s+\*\*)', content)
+    
     html_output = ""
-    for item in items:
-        # Extract word name (between ** and **)
-        name_match = re.search(r"\*\*(.*?)\*\*", item)
+    for block in blocks:
+        if not block.strip() or not re.search(r'\d+\.\s+\*\*', block):
+            continue
+            
+        # Extract name: 1. **Liaise** (Verb) -> Liaise
+        name_match = re.search(r"\d+\.\s+\*\*(.*?)\*\*", block)
         word_name = name_match.group(1) if name_match else "Word"
         
-        # Extract word type: (Verb), (Adjective), etc.
-        type_match = re.search(r"\((.*?)\)", item)
+        # Extract type: (Verb)
+        type_match = re.search(r"\((.*?)\)", block)
         word_type = type_match.group(1) if type_match else ""
         
-        def extract_field(label_regex, text):
-            match = re.search(rf"\*\*{label_regex}\*\*[:：]\s*(.*)", text, re.IGNORECASE)
-            return match.group(1).strip() if match else ""
+        # Helper to find fields like **Meaning**: or **Pronunciation**:
+        def get_val(label):
+            m = re.search(rf"\*\*{label}\*\*[:：]\s*(.*)", block, re.IGNORECASE)
+            return m.group(1).strip() if m else ""
 
-        definition = extract_field(r"(?:Definition|Meaning)", item)
-        cantonese = extract_field(r"(?:Cantonese Explanation|Cantonese)", item)
-        pronunciation = extract_field(r"Pronunciation", item)
-        example = extract_field(r"Example", item)
-        translation = extract_field(r"Translation|Cantonese Example", item)
+        definition = get_val(r"(?:Definition|Meaning)")
+        cantonese = get_val(r"(?:Cantonese Explanation|Cantonese)")
+        pronunciation = get_val(r"Pronunciation")
+        example = get_val(r"Example")
+        translation = get_val(r"(?:Translation|Cantonese Example)")
         
         html_output += f"""
                 <div class="word-item">
@@ -370,7 +373,8 @@ def generate_index():
         f.write(manifest)
 
     # Update Service Worker version to force refresh
-    sw_content = f"const CACHE_NAME = 'eng-daily-v{int(time.time())}';\\nconst ASSETS = [\\n  './index.html',\\n  './manifest.json',\\n  './icon.svg'\\n];\\n\\nself.addEventListener('install', (event) => {{\\n  event.waitUntil(\\n    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))\\n  );\\n}});\\n\\nself.addEventListener('fetch', (event) => {{\\n  event.respondWith(\\n    caches.match(event.request).then((response) => {{\\n      return response || fetch(event.request);\\n    }})\\n  );\\n}});"
+    sw_version = int(time.time())
+    sw_content = f"const CACHE_NAME = 'eng-daily-v{sw_version}';\\nconst ASSETS = [\\n  './index.html',\\n  './manifest.json',\\n  './icon.svg'\\n];\\n\\nself.addEventListener('install', (event) => {{\\n  event.waitUntil(\\n    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))\\n  );\\n}});\\n\\nself.addEventListener('fetch', (event) => {{\\n  event.respondWith(\\n    caches.match(event.request).then((response) => {{\\n      return response || fetch(event.request);\\n    }})\\n  );\\n}});"
     with open(SW_PATH, 'w') as f:
         f.write(sw_content.replace('\\\\n', '\\n'))
 
