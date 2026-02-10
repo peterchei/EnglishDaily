@@ -161,9 +161,9 @@
         </div>
 
         <div class="tabs">
-            <button class="tab-btn active" onclick="showTab('today')">Today</button>
-            <button class="tab-btn" onclick="showTab('history')">History</button>
-            <button class="tab-btn" onclick="showTab('missions')">Missions</button>
+            <button class="tab-btn active" onclick="showTab('today', event)">Today</button>
+            <button class="tab-btn" onclick="showTab('history', event)">History</button>
+            <button class="tab-btn" onclick="showTab('missions', event)">Missions</button>
         </div>
 
         <!-- TODAY SECTION -->
@@ -223,10 +223,13 @@
     </div>
 
     <script>
-        function showTab(tabId) {
+        function showTab(tabId, event) {
             document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            document.getElementById(tabId).classList.add('active');
+            const activeTab = document.getElementById(tabId);
+            if (activeTab) {
+                activeTab.classList.add('active');
+            }
             event.currentTarget.classList.add('active');
         }
     </script>

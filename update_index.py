@@ -13,18 +13,14 @@ def get_lessons():
         for file in files:
             if file.endswith(".md"):
                 path = os.path.relpath(os.path.join(root, file), BASE_DIR)
-                # Extract date and title
-                # Format: vocabulary_YYYY-MM-DD.md
                 match = re.search(r"vocabulary_(\d{4}-\d{2}-\d{2})\.md", file)
                 if match:
                     date_str = match.group(1)
                     date_obj = datetime.strptime(date_str, "%Y-%m-%d")
                     
-                    # Read title from file
                     with open(os.path.join(root, file), 'r') as f:
                         content = f.read()
-                        # Extract first word as "title" or just use the date
-                        first_word_match = re.search(r"### 1\. (.*) \(", content)
+                        first_word_match = re.search(r"### \d+\. (.*?)(?:\s+\(|$)", content)
                         title = first_word_match.group(1) if first_word_match else date_str
                     
                     lessons.append({
@@ -34,15 +30,50 @@ def get_lessons():
                         "path": f"https://github.com/peterchei/EnglishDaily/blob/main/{path}"
                     })
     
-    # Sort lessons by date descending
     lessons.sort(key=lambda x: x['date'], reverse=True)
     return lessons
+
+def parse_markdown_content(content):
+    # More flexible regex to match different formats
+    pattern = r"### \d+\. (.*?)\n(.*?)(?=### \d+|\Z)"
+    sections = re.findall(pattern, content, re.DOTALL)
+    
+    html_output = ""
+    for title, body in sections:
+        word_parts = title.split('(')
+        word_name = word_parts[0].strip('* ')
+        word_type = word_parts[1].replace(')', '').strip() if len(word_parts) > 1 else ""
+        
+        def extract_field(label_regex, text):
+            match = re.search(rf"[*-]\s+\*\*{label_regex}\*\*[:：]\s*(.*)", text, re.IGNORECASE)
+            return match.group(1).strip() if match else ""
+
+        definition = extract_field(r"(?:Definition|Meaning)", body)
+        cantonese = extract_field(r"(?:Cantonese Explanation|Cantonese)", body)
+        pronunciation = extract_field(r"Pronunciation", body)
+        example = extract_field(r"Example", body)
+        translation = extract_field(r"Translation", body)
+        
+        html_output += f"""
+                <div class="word-item">
+                    <div class="word-header">
+                        <span class="word-text">{word_name}</span>
+                        <span class="word-type">{word_type}</span>
+                        <span class="word-pron">{pronunciation}</span>
+                    </div>
+                    <p>{definition}</p>
+                    <div class="translation">廣東話：{cantonese}</div>
+                    <div class="example-box">
+                        {example}<br>
+                        {translation}
+                    </div>
+                </div>"""
+    return html_output
 
 def generate_index():
     lessons = get_lessons()
     latest = lessons[0] if lessons else None
     
-    # Extract details for the latest lesson
     latest_content = ""
     latest_date_full = ""
     audio_file = ""
@@ -50,29 +81,9 @@ def generate_index():
         latest_date_full = datetime.strptime(latest['date'], "%Y-%m-%d").strftime("%B %d, %Y").upper()
         audio_file = f"media/{latest['date']}_pronunciation.mp3"
         
-        # Read the file and parse into HTML
         full_path = os.path.join(BASE_DIR, latest['path'].split('main/')[1])
         with open(full_path, 'r') as f:
-            content = f.read()
-            
-            # Simple parser for the specific markdown format used
-            words = re.findall(r"### \d+\. (.*?)\n\*   \*\*Definition:\*\* (.*?)\n\*   \*\*Cantonese Explanation:\*\* (.*?)\n\*   \*\*Pronunciation:\*\* (.*?)\n.*?\n\*   \*\*Example:\*\* \"(.*?)\"\n\*   \*\*Translation:\*\* 「(.*?)」", content, re.DOTALL)
-            
-            for word_name, definition, cantonese, pron, example, translation in words:
-                latest_content += f"""
-                <div class="word-item">
-                    <div class="word-header">
-                        <span class="word-text">{word_name}</span>
-                        <span class="word-type"></span>
-                        <span class="word-pron">{pron}</span>
-                    </div>
-                    <p>{definition}</p>
-                    <div class="translation">廣東話：{cantonese}</div>
-                    <div class="example-box">
-                        "{example}"<br>
-                        「{translation}」
-                    </div>
-                </div>"""
+            latest_content = parse_markdown_content(f.read())
 
     history_html = ""
     for lesson in lessons:
@@ -247,9 +258,9 @@ def generate_index():
         </div>
 
         <div class="tabs">
-            <button class="tab-btn active" onclick="showTab('today')">Today</button>
-            <button class="tab-btn" onclick="showTab('history')">History</button>
-            <button class="tab-btn" onclick="showTab('missions')">Missions</button>
+            <button class="tab-btn active" onclick="showTab('today', event)">Today</button>
+            <button class="tab-btn" onclick="showTab('history', event)">History</button>
+            <button class="tab-btn" onclick="showTab('missions', event)">Missions</button>
         </div>
 
         <!-- TODAY SECTION -->
@@ -291,10 +302,13 @@ def generate_index():
     </div>
 
     <script>
-        function showTab(tabId) {{
+        function showTab(tabId, event) {{
             document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            document.getElementById(tabId).classList.add('active');
+            const activeTab = document.getElementById(tabId);
+            if (activeTab) {{
+                activeTab.classList.add('active');
+            }}
             event.currentTarget.classList.add('active');
         }}
     </script>
