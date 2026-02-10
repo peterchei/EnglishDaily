@@ -20,8 +20,7 @@ def get_lessons():
                     
                     with open(os.path.join(root, file), 'r', encoding='utf-8') as f:
                         content = f.read()
-                        # Search for numbered list item or header
-                        first_word_match = re.search(r"\d+\.\s+\*\*(.*?)\*\*", content)
+                        first_word_match = re.search(r"(?:### )?\d+\.\s+\*\*(.*?)\*\*", content)
                         title = first_word_match.group(1) if first_word_match else date_str
                     
                     lessons.append({
@@ -47,13 +46,13 @@ def parse_markdown_content(content):
         header_line = lines[0]
         word_name = header_line.split('**')[0].strip()
         
-        # Extract word type if it exists after the name, e.g., "(Verb)"
+        # Extract word type: (Verb), (Adjective), etc.
         type_match = re.search(r"\((.*?)\)", header_line)
         word_type = type_match.group(1) if type_match else ""
         
         def extract_field(label_regex, text):
-            # Look for lines containing **Label**:
-            match = re.search(rf"\*\*{label_regex}\*\*[:：]\s*(.*)", text, re.IGNORECASE)
+            # Escaping the hyphen correctly and handle whitespace better
+            match = re.search(rf"[\*\-\s]*\*\*{label_regex}\*\*[:：]\s*(.*)", text, re.IGNORECASE)
             return match.group(1).strip() if match else ""
 
         definition = extract_field(r"(?:Definition|Meaning)", item)
@@ -89,7 +88,6 @@ def generate_index():
         latest_date_full = datetime.strptime(latest['date'], "%Y-%m-%d").strftime("%B %d, %Y").upper()
         audio_file = f"media/{latest['date']}_pronunciation.mp3"
         
-        # Get path for local reading
         local_rel_path = latest['path'].split('main/')[1]
         full_path = os.path.join(BASE_DIR, local_rel_path)
         with open(full_path, 'r', encoding='utf-8') as f:
@@ -105,12 +103,16 @@ def generate_index():
                     </a>
                 </li>"""
 
+    # Non-f-string template
     html_template = """<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Daily English Learning Hub 🚀</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon.png">
+    <meta name="theme-color" content="#3b82f6">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -254,11 +256,11 @@ def generate_index():
 
         <div class="stats-bar">
             <div class="stat-card">
-                <div class="stat-value">__WORDS_COUNT__</div>
+                <div class="stat-value">{WORDS_COUNT}</div>
                 <div class="stat-label">Words Learned</div>
             </div>
             <div class="stat-card">
-                <div class="stat-value">__STREAK__</div>
+                <div class="stat-value">{STREAK}</div>
                 <div class="stat-label">Daily Streak</div>
             </div>
             <div class="stat-card">
@@ -277,11 +279,11 @@ def generate_index():
         <div id="today" class="content-section active">
             <div class="section-title">📚 Today's Lesson</div>
             <div class="lesson-card">
-                <div style="color: var(--subtext); font-size: 0.8rem; margin-bottom: 20px;">__LATEST_DATE__</div>
-                __LATEST_CONTENT__
+                <div style="color: var(--subtext); font-size: 0.8rem; margin-bottom: 20px;">{LATEST_DATE}</div>
+                {LATEST_CONTENT}
                 <div class="section-title" style="margin-top: 40px; font-size: 1.2rem;">🔊 Audio Guide</div>
                 <audio controls style="width: 100%;">
-                    <source src="__AUDIO_FILE__" type="audio/mpeg">
+                    <source src="{AUDIO_FILE}" type="audio/mpeg">
                 </audio>
             </div>
         </div>
@@ -290,7 +292,7 @@ def generate_index():
         <div id="history" class="content-section">
             <div class="section-title">⏳ Previous Lessons</div>
             <ul class="history-list">
-                __HISTORY_HTML__
+                {HISTORY_HTML}
             </ul>
         </div>
 
@@ -323,20 +325,28 @@ def generate_index():
                 event.currentTarget.classList.add('active');
             }
         }
+
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(reg => console.log('Service worker registered!', reg))
+                    .catch(err => console.log('Service worker registration failed: ', err));
+            });
+        }
     </script>
 </body>
 </html>
 """
     # Replace placeholders
-    html_template = html_template.replace("__WORDS_COUNT__", str(len(lessons) * 3))
-    html_template = html_template.replace("__STREAK__", str(len(lessons)))
-    html_template = html_template.replace("__LATEST_DATE__", latest_date_full)
-    html_template = html_template.replace("__LATEST_CONTENT__", latest_content)
-    html_template = html_template.replace("__AUDIO_FILE__", audio_file)
-    html_template = html_template.replace("__HISTORY_HTML__", history_html)
+    html_output = html_template.replace("{WORDS_COUNT}", str(len(lessons) * 3))
+    html_output = html_output.replace("{STREAK}", str(len(lessons)))
+    html_output = html_output.replace("{LATEST_DATE}", latest_date_full)
+    html_output = html_output.replace("{LATEST_CONTENT}", latest_content)
+    html_output = html_output.replace("{AUDIO_FILE}", audio_file)
+    html_output = html_output.replace("{HISTORY_HTML}", history_html)
 
     with open(INDEX_PATH, 'w') as f:
-        f.write(html_template)
+        f.write(html_output)
 
 if __name__ == "__main__":
     generate_index()
