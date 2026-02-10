@@ -18,9 +18,10 @@ def get_lessons():
                     date_str = match.group(1)
                     date_obj = datetime.strptime(date_str, "%Y-%m-%d")
                     
-                    with open(os.path.join(root, file), 'r') as f:
+                    with open(os.path.join(root, file), 'r', encoding='utf-8') as f:
                         content = f.read()
-                        first_word_match = re.search(r"(?:### )?\d+\.\s+\*\*(.*?)\*\*", content)
+                        # Search for numbered list item or header
+                        first_word_match = re.search(r"\d+\.\s+\*\*(.*?)\*\*", content)
                         title = first_word_match.group(1) if first_word_match else date_str
                     
                     lessons.append({
@@ -34,30 +35,38 @@ def get_lessons():
     return lessons
 
 def parse_markdown_content(content):
-    pattern = r"(?:### )?\d+\.\s+\*\*(.*?)\*\*(.*?)(?=(?:### )?\d+\.|\Z)"
-    sections = re.findall(pattern, content, re.DOTALL)
+    # Split by numbered items
+    items = re.split(r'\n\d+\.\s+\*\*', content)
+    # The first item is the header, skip it
+    items = items[1:]
     
     html_output = ""
-    for title, body in sections:
-        word_name = title.strip()
-        type_match = re.search(r"\((.*?)\)", body[:20])
+    for item in items:
+        # Re-construct the word name since we split on it
+        lines = item.split('\n')
+        header_line = lines[0]
+        word_name = header_line.split('**')[0].strip()
+        
+        # Extract word type if it exists after the name, e.g., "(Verb)"
+        type_match = re.search(r"\((.*?)\)", header_line)
         word_type = type_match.group(1) if type_match else ""
         
         def extract_field(label_regex, text):
-            match = re.search(rf"^[*-]\s+\*\*{label_regex}\*\*[:：]\s*(.*)", text, re.IGNORECASE | re.MULTILINE)
+            # Look for lines containing **Label**:
+            match = re.search(rf"\*\*{label_regex}\*\*[:：]\s*(.*)", text, re.IGNORECASE)
             return match.group(1).strip() if match else ""
 
-        definition = extract_field(r"(?:Definition|Meaning)", body)
-        cantonese = extract_field(r"(?:Cantonese Explanation|Cantonese)", body)
-        pronunciation = extract_field(r"Pronunciation", body)
-        example = extract_field(r"Example", body)
-        translation = extract_field(r"Translation|Cantonese Example", body)
+        definition = extract_field(r"(?:Definition|Meaning)", item)
+        cantonese = extract_field(r"(?:Cantonese Explanation|Cantonese)", item)
+        pronunciation = extract_field(r"Pronunciation", item)
+        example = extract_field(r"Example", item)
+        translation = extract_field(r"Translation|Cantonese Example", item)
         
         html_output += f"""
                 <div class="word-item">
                     <div class="word-header">
                         <span class="word-text">{word_name}</span>
-                        <span class="word-type">{word_type}</span>
+                        <span class="word-type">({word_type})</span>
                         <span class="word-pron">{pronunciation}</span>
                     </div>
                     <p>{definition}</p>
@@ -80,8 +89,10 @@ def generate_index():
         latest_date_full = datetime.strptime(latest['date'], "%Y-%m-%d").strftime("%B %d, %Y").upper()
         audio_file = f"media/{latest['date']}_pronunciation.mp3"
         
-        full_path = os.path.join(BASE_DIR, latest['path'].split('main/')[1])
-        with open(full_path, 'r') as f:
+        # Get path for local reading
+        local_rel_path = latest['path'].split('main/')[1]
+        full_path = os.path.join(BASE_DIR, local_rel_path)
+        with open(full_path, 'r', encoding='utf-8') as f:
             latest_content = parse_markdown_content(f.read())
 
     history_html = ""
@@ -94,7 +105,7 @@ def generate_index():
                     </a>
                 </li>"""
 
-    html_template = f"""<!DOCTYPE html>
+    html_template = """<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -102,7 +113,7 @@ def generate_index():
     <title>Daily English Learning Hub 🚀</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
     <style>
-        :root {{
+        :root {
             --bg: #0f172a;
             --card-bg: #1e293b;
             --accent: #3b82f6;
@@ -110,9 +121,9 @@ def generate_index():
             --subtext: #94a3b8;
             --success: #10b981;
             --funny: #f59e0b;
-        }}
-        * {{ box-sizing: border-box; }}
-        body {{
+        }
+        * { box-sizing: border-box; }
+        body {
             font-family: 'Outfit', sans-serif;
             background-color: var(--bg);
             color: var(--text);
@@ -122,30 +133,30 @@ def generate_index():
             flex-direction: column;
             align-items: center;
             line-height: 1.6;
-        }}
-        .dashboard {{
+        }
+        .dashboard {
             max-width: 1000px;
             width: 100%;
-        }}
-        header {{
+        }
+        header {
             text-align: center;
             margin: 20px 0;
             animation: fadeIn 1s ease-out;
-        }}
-        h1 {{
+        }
+        h1 {
             color: var(--accent);
             font-size: 2.2rem;
             margin-bottom: 5px;
-        }}
-        .stats-bar {{
+        }
+        .stats-bar {
             display: flex;
             overflow-x: auto;
             gap: 15px;
             margin-bottom: 30px;
             padding-bottom: 10px;
             scrollbar-width: none;
-        }}
-        .stat-card {{
+        }
+        .stat-card {
             background: var(--card-bg);
             padding: 15px;
             border-radius: 16px;
@@ -153,17 +164,16 @@ def generate_index():
             flex: 1;
             min-width: 120px;
             border-bottom: 4px solid var(--accent);
-        }}
-        .stat-value {{ font-size: 1.5rem; font-weight: bold; color: var(--success); }}
-        .stat-label {{ font-size: 0.8rem; color: var(--subtext); }}
+        }
+        .stat-value { font-size: 1.5rem; font-weight: bold; color: var(--success); }
+        .stat-label { font-size: 0.8rem; color: var(--subtext); }
 
-        /* Navigation Tabs */
-        .tabs {{
+        .tabs {
             display: flex;
             gap: 10px;
             margin-bottom: 20px;
-        }}
-        .tab-btn {{
+        }
+        .tab-btn {
             background: var(--card-bg);
             border: 1px solid var(--accent);
             color: var(--text);
@@ -171,68 +181,68 @@ def generate_index():
             border-radius: 20px;
             cursor: pointer;
             font-family: inherit;
-        }}
-        .tab-btn.active {{
+        }
+        .tab-btn.active {
             background: var(--accent);
             color: white;
-        }}
+        }
 
-        .content-section {{
+        .content-section {
             display: none;
             animation: fadeIn 0.5s ease-out;
-        }}
-        .content-section.active {{
+        }
+        .content-section.active {
             display: block;
-        }}
+        }
 
-        .lesson-card {{
+        .lesson-card {
             background: var(--card-bg);
             border-radius: 20px;
             padding: 25px;
             margin-bottom: 20px;
             position: relative;
-        }}
-        .word-item {{
+        }
+        .word-item {
             margin-bottom: 25px;
             padding-bottom: 15px;
             border-bottom: 1px solid #334155;
-        }}
-        .word-item:last-child {{ border-bottom: none; }}
-        .word-header {{ display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }}
-        .word-text {{ font-size: 1.5rem; font-weight: bold; color: #fff; }}
-        .word-type {{ color: var(--accent); font-style: italic; font-size: 0.9rem; }}
-        .word-pron {{ font-family: monospace; color: var(--success); background: #0004; padding: 2px 6px; border-radius: 4px; font-size: 0.9rem; }}
+        }
+        .word-item:last-child { border-bottom: none; }
+        .word-header { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+        .word-text { font-size: 1.5rem; font-weight: bold; color: #fff; }
+        .word-type { color: var(--accent); font-style: italic; font-size: 0.9rem; }
+        .word-pron { font-family: monospace; color: var(--success); background: #0004; padding: 2px 6px; border-radius: 4px; font-size: 0.9rem; }
         
-        .translation {{ color: var(--subtext); font-size: 0.95rem; margin-top: 5px; margin-bottom: 10px; }}
-        .example-box {{ color: var(--subtext); border-left: 3px solid var(--accent); padding-left: 15px; font-style: italic; }}
+        .translation { color: var(--subtext); font-size: 0.95rem; margin-top: 5px; margin-bottom: 10px; }
+        .example-box { color: var(--subtext); border-left: 3px solid var(--accent); padding-left: 15px; font-style: italic; }
 
-        .history-list {{ list-style: none; padding: 0; }}
-        .history-item {{
+        .history-list { list-style: none; padding: 0; }
+        .history-item {
             background: var(--card-bg);
             margin-bottom: 10px;
             border-radius: 12px;
             transition: transform 0.2s;
-        }}
-        .history-item:hover {{ transform: scale(1.02); }}
-        .history-item a {{
+        }
+        .history-item:hover { transform: scale(1.02); }
+        .history-item a {
             padding: 15px 20px;
             color: var(--text);
             text-decoration: none;
             display: flex;
             justify-content: space-between;
             align-items: center;
-        }}
-        .history-date {{ font-size: 0.8rem; color: var(--subtext); }}
+        }
+        .history-date { font-size: 0.8rem; color: var(--subtext); }
 
-        .mission-item {{
+        .mission-item {
             background: var(--card-bg);
             padding: 15px;
             border-radius: 12px;
             margin-bottom: 15px;
             border-left: 4px solid var(--funny);
-        }}
+        }
 
-        @keyframes fadeIn {{ from {{ opacity: 0; transform: translateY(10px); }} to {{ opacity: 1; transform: translateY(0); }} }}
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body>
@@ -244,11 +254,11 @@ def generate_index():
 
         <div class="stats-bar">
             <div class="stat-card">
-                <div class="stat-value">{len(lessons) * 3}</div>
+                <div class="stat-value">__WORDS_COUNT__</div>
                 <div class="stat-label">Words Learned</div>
             </div>
             <div class="stat-card">
-                <div class="stat-value">{len(lessons)}</div>
+                <div class="stat-value">__STREAK__</div>
                 <div class="stat-label">Daily Streak</div>
             </div>
             <div class="stat-card">
@@ -267,11 +277,11 @@ def generate_index():
         <div id="today" class="content-section active">
             <div class="section-title">📚 Today's Lesson</div>
             <div class="lesson-card">
-                <div style="color: var(--subtext); font-size: 0.8rem; margin-bottom: 20px;">{latest_date_full}</div>
-                {latest_content}
+                <div style="color: var(--subtext); font-size: 0.8rem; margin-bottom: 20px;">__LATEST_DATE__</div>
+                __LATEST_CONTENT__
                 <div class="section-title" style="margin-top: 40px; font-size: 1.2rem;">🔊 Audio Guide</div>
                 <audio controls style="width: 100%;">
-                    <source src="{audio_file}" type="audio/mpeg">
+                    <source src="__AUDIO_FILE__" type="audio/mpeg">
                 </audio>
             </div>
         </div>
@@ -280,7 +290,7 @@ def generate_index():
         <div id="history" class="content-section">
             <div class="section-title">⏳ Previous Lessons</div>
             <ul class="history-list">
-                {history_html}
+                __HISTORY_HTML__
             </ul>
         </div>
 
@@ -302,21 +312,29 @@ def generate_index():
     </div>
 
     <script>
-        function showTab(tabId, event) {{
+        function showTab(tabId, event) {
             document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             const activeTab = document.getElementById(tabId);
-            if (activeTab) {{
+            if (activeTab) {
                 activeTab.classList.add('active');
-            }}
-            if (event) {{
+            }
+            if (event) {
                 event.currentTarget.classList.add('active');
-            }}
-        }}
+            }
+        }
     </script>
 </body>
 </html>
 """
+    # Replace placeholders
+    html_template = html_template.replace("__WORDS_COUNT__", str(len(lessons) * 3))
+    html_template = html_template.replace("__STREAK__", str(len(lessons)))
+    html_template = html_template.replace("__LATEST_DATE__", latest_date_full)
+    html_template = html_template.replace("__LATEST_CONTENT__", latest_content)
+    html_template = html_template.replace("__AUDIO_FILE__", audio_file)
+    html_template = html_template.replace("__HISTORY_HTML__", history_html)
+
     with open(INDEX_PATH, 'w') as f:
         f.write(html_template)
 
