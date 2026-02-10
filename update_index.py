@@ -20,7 +20,7 @@ def get_lessons():
                     
                     with open(os.path.join(root, file), 'r') as f:
                         content = f.read()
-                        first_word_match = re.search(r"### \d+\. (.*?)(?:\s+\(|$)", content)
+                        first_word_match = re.search(r"(?:### )?\d+\.\s+\*\*(.*?)\*\*", content)
                         title = first_word_match.group(1) if first_word_match else date_str
                     
                     lessons.append({
@@ -34,25 +34,24 @@ def get_lessons():
     return lessons
 
 def parse_markdown_content(content):
-    # More flexible regex to match different formats
-    pattern = r"### \d+\. (.*?)\n(.*?)(?=### \d+|\Z)"
+    pattern = r"(?:### )?\d+\.\s+\*\*(.*?)\*\*(.*?)(?=(?:### )?\d+\.|\Z)"
     sections = re.findall(pattern, content, re.DOTALL)
     
     html_output = ""
     for title, body in sections:
-        word_parts = title.split('(')
-        word_name = word_parts[0].strip('* ')
-        word_type = word_parts[1].replace(')', '').strip() if len(word_parts) > 1 else ""
+        word_name = title.strip()
+        type_match = re.search(r"\((.*?)\)", body[:20])
+        word_type = type_match.group(1) if type_match else ""
         
         def extract_field(label_regex, text):
-            match = re.search(rf"[*-]\s+\*\*{label_regex}\*\*[:：]\s*(.*)", text, re.IGNORECASE)
+            match = re.search(rf"^[*-]\s+\*\*{label_regex}\*\*[:：]\s*(.*)", text, re.IGNORECASE | re.MULTILINE)
             return match.group(1).strip() if match else ""
 
         definition = extract_field(r"(?:Definition|Meaning)", body)
         cantonese = extract_field(r"(?:Cantonese Explanation|Cantonese)", body)
         pronunciation = extract_field(r"Pronunciation", body)
         example = extract_field(r"Example", body)
-        translation = extract_field(r"Translation", body)
+        translation = extract_field(r"Translation|Cantonese Example", body)
         
         html_output += f"""
                 <div class="word-item">
@@ -158,6 +157,7 @@ def generate_index():
         .stat-value {{ font-size: 1.5rem; font-weight: bold; color: var(--success); }}
         .stat-label {{ font-size: 0.8rem; color: var(--subtext); }}
 
+        /* Navigation Tabs */
         .tabs {{
             display: flex;
             gap: 10px;
@@ -309,7 +309,9 @@ def generate_index():
             if (activeTab) {{
                 activeTab.classList.add('active');
             }}
-            event.currentTarget.classList.add('active');
+            if (event) {{
+                event.currentTarget.classList.add('active');
+            }}
         }}
     </script>
 </body>
