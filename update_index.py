@@ -7,6 +7,7 @@ from datetime import datetime
 BASE_DIR = "/home/peterchei/.openclaw/workspace/EnglishDaily"
 LESSONS_DIR = os.path.join(BASE_DIR, "lessons")
 INDEX_PATH = os.path.join(BASE_DIR, "index.html")
+README_PATH = os.path.join(BASE_DIR, "README.md")
 SW_PATH = os.path.join(BASE_DIR, "sw.js")
 MANIFEST_PATH = os.path.join(BASE_DIR, "manifest.json")
 
@@ -23,7 +24,6 @@ def get_lessons():
                     
                     with open(os.path.join(root, file), 'r', encoding='utf-8') as f:
                         content = f.read()
-                        # Match the first word in bold
                         name_match = re.search(r"\d+\.\s+\*\*(.*?)\*\*", content)
                         title = name_match.group(1) if name_match else date_str
                     
@@ -31,31 +31,24 @@ def get_lessons():
                         "date": date_str,
                         "display_date": date_obj.strftime("%b %d"),
                         "title": title,
-                        "path": f"https://github.com/peterchei/EnglishDaily/blob/main/{path}"
+                        "path": path
                     })
     
     lessons.sort(key=lambda x: x['date'], reverse=True)
     return lessons
 
 def parse_markdown_content(content):
-    # Split the content into blocks for each word
-    # Each block starts with "1. **Word**", "2. **Word**", etc.
     blocks = re.split(r'\n(?=\d+\.\s+\*\*)', content)
+    blocks = [b for b in blocks if re.search(r'\d+\.\s+\*\*', b)]
     
     html_output = ""
     for block in blocks:
-        if not block.strip() or not re.search(r'\d+\.\s+\*\*', block):
-            continue
-            
-        # Extract name: 1. **Liaise** (Verb) -> Liaise
         name_match = re.search(r"\d+\.\s+\*\*(.*?)\*\*", block)
         word_name = name_match.group(1) if name_match else "Word"
         
-        # Extract type: (Verb)
         type_match = re.search(r"\((.*?)\)", block)
         word_type = type_match.group(1) if type_match else ""
         
-        # Helper to find fields like **Meaning**: or **Pronunciation**:
         def get_val(label):
             m = re.search(rf"\*\*{label}\*\*[:：]\s*(.*)", block, re.IGNORECASE)
             return m.group(1).strip() if m else ""
@@ -82,8 +75,7 @@ def parse_markdown_content(content):
                 </div>"""
     return html_output
 
-def generate_index():
-    lessons = get_lessons()
+def generate_index(lessons):
     latest = lessons[0] if lessons else None
     
     latest_content = ""
@@ -93,8 +85,7 @@ def generate_index():
         latest_date_full = datetime.strptime(latest['date'], "%Y-%m-%d").strftime("%B %d, %Y").upper()
         audio_file = f"media/{latest['date']}_pronunciation.mp3"
         
-        local_rel_path = latest['path'].split('main/')[1]
-        full_path = os.path.join(BASE_DIR, local_rel_path)
+        full_path = os.path.join(BASE_DIR, latest['path'])
         with open(full_path, 'r', encoding='utf-8') as f:
             latest_content = parse_markdown_content(f.read())
 
@@ -102,7 +93,7 @@ def generate_index():
     for lesson in lessons:
         history_html += f"""
                 <li class="history-item">
-                    <a href="{lesson['path']}">
+                    <a href="https://github.com/peterchei/EnglishDaily/blob/main/{lesson['path']}">
                         <span>{lesson['title']}</span>
                         <span class="history-date">{lesson['display_date']}</span>
                     </a>
@@ -115,7 +106,7 @@ def generate_index():
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Daily English Learning Hub 🚀</title>
     <link rel="manifest" href="manifest.json">
-    <link rel="apple-touch-icon" href="icon.svg">
+    <link rel="apple-touch-icon" href="icon.png">
     <meta name="theme-color" content="#3b82f6">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
     <style>
@@ -313,7 +304,7 @@ def generate_index():
 
         <div class="agent-note" style="margin-top: 20px;">
             <b>Little Pretty A:</b><br>
-            "Welcome to the English Daily Hub! I've updated the page to be more inclusive for everyone. Let's learn together!"
+            "Welcome to the English Daily Hub! Let's learn together!"
         </div>
     </div>
 
@@ -341,7 +332,6 @@ def generate_index():
 </body>
 </html>
 """
-    # Replace placeholders
     html_output = html_template.replace("{WORDS_COUNT}", str(len(lessons) * 3))
     html_output = html_output.replace("{STREAK}", str(len(lessons)))
     html_output = html_output.replace("{LATEST_DATE}", latest_date_full)
@@ -352,6 +342,50 @@ def generate_index():
     with open(INDEX_PATH, 'w') as f:
         f.write(html_output)
 
+def generate_readme(lessons):
+    latest_date = lessons[0]['date'] if lessons else datetime.now().strftime("%Y-%m-%d")
+    streak = len(lessons)
+    
+    history_md = ""
+    for lesson in lessons:
+        history_md += f"- **[{lesson['display_date']}: {lesson['title']}]({lesson['path']})**\n"
+
+    readme_content = f"""# English Learning Journey 🚀
+### "Mastering the London Flow"
+
+Welcome to this daily English growth journal. This repository is managed by **Little Pretty A ✨** to track progress, store learning materials, and share knowledge with friends.
+
+---
+
+## 📱 Access the Web App
+Scan the QR code below to access the live dashboard on your phone:
+
+![QR Code](media/qrcode.png)
+
+[Open Web App](https://peterchei.github.io/EnglishDaily/)
+
+---
+
+## 📊 Progress Dashboard
+- **Current Focus:** 🇬🇧 London Workplace & Social Idioms
+- **Daily Streak:** 🔥 {streak} Days
+- **Last Updated:** {latest_date}
+
+## 📅 Monthly Lessons
+### 2026 February
+{history_md}
+
+---
+*“Success is the sum of small efforts, repeated day in and day out.”*
+"""
+    with open(README_PATH, 'w') as f:
+        f.write(readme_content)
+
+if __name__ == "__main__":
+    lessons = get_lessons()
+    generate_index(lessons)
+    generate_readme(lessons)
+    
     # Update manifest to use SVG
     manifest = """{
   "name": "English Daily Hub",
@@ -372,11 +406,8 @@ def generate_index():
     with open(MANIFEST_PATH, 'w') as f:
         f.write(manifest)
 
-    # Update Service Worker version to force refresh
+    # Update Service Worker
     sw_version = int(time.time())
     sw_content = f"const CACHE_NAME = 'eng-daily-v{sw_version}';\\nconst ASSETS = [\\n  './index.html',\\n  './manifest.json',\\n  './icon.svg'\\n];\\n\\nself.addEventListener('install', (event) => {{\\n  event.waitUntil(\\n    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))\\n  );\\n}});\\n\\nself.addEventListener('fetch', (event) => {{\\n  event.respondWith(\\n    caches.match(event.request).then((response) => {{\\n      return response || fetch(event.request);\\n    }})\\n  );\\n}});"
     with open(SW_PATH, 'w') as f:
         f.write(sw_content.replace('\\\\n', '\\n'))
-
-if __name__ == "__main__":
-    generate_index()
