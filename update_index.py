@@ -1,11 +1,14 @@
 import os
 import re
+import time
 from datetime import datetime
 
 # Paths
 BASE_DIR = "/home/peterchei/.openclaw/workspace/EnglishDaily"
 LESSONS_DIR = os.path.join(BASE_DIR, "lessons")
 INDEX_PATH = os.path.join(BASE_DIR, "index.html")
+SW_PATH = os.path.join(BASE_DIR, "sw.js")
+MANIFEST_PATH = os.path.join(BASE_DIR, "manifest.json")
 
 def get_lessons():
     lessons = []
@@ -20,7 +23,7 @@ def get_lessons():
                     
                     with open(os.path.join(root, file), 'r', encoding='utf-8') as f:
                         content = f.read()
-                        first_word_match = re.search(r"(?:### )?\d+\.\s+\*\*(.*?)\*\*", content)
+                        first_word_match = re.search(r"\d+\.\s+\*\*(.*?)\*\*", content)
                         title = first_word_match.group(1) if first_word_match else date_str
                     
                     lessons.append({
@@ -34,25 +37,24 @@ def get_lessons():
     return lessons
 
 def parse_markdown_content(content):
-    # Split by numbered items
-    items = re.split(r'\n\d+\.\s+\*\*', content)
-    # The first item is the header, skip it
-    items = items[1:]
-    
+    # Simplified splitting to avoid complex regex
+    items = content.split('### ')[1:] # split by h3 headers
+    if not items:
+        # Try splitting by "1. ", "2. " etc if no h3
+        items = re.split(r'\d+\.\s+\*\*', content)[1:]
+
     html_output = ""
     for item in items:
-        # Re-construct the word name since we split on it
-        lines = item.split('\n')
-        header_line = lines[0]
-        word_name = header_line.split('**')[0].strip()
+        # Extract word name (between ** and **)
+        name_match = re.search(r"\*\*(.*?)\*\*", item)
+        word_name = name_match.group(1) if name_match else "Word"
         
         # Extract word type: (Verb), (Adjective), etc.
-        type_match = re.search(r"\((.*?)\)", header_line)
+        type_match = re.search(r"\((.*?)\)", item)
         word_type = type_match.group(1) if type_match else ""
         
         def extract_field(label_regex, text):
-            # Escaping the hyphen correctly and handle whitespace better
-            match = re.search(rf"[\*\-\s]*\*\*{label_regex}\*\*[:：]\s*(.*)", text, re.IGNORECASE)
+            match = re.search(rf"\*\*{label_regex}\*\*[:：]\s*(.*)", text, re.IGNORECASE)
             return match.group(1).strip() if match else ""
 
         definition = extract_field(r"(?:Definition|Meaning)", item)
@@ -103,7 +105,6 @@ def generate_index():
                     </a>
                 </li>"""
 
-    # Non-f-string template
     html_template = """<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -111,7 +112,7 @@ def generate_index():
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Daily English Learning Hub 🚀</title>
     <link rel="manifest" href="manifest.json">
-    <link rel="apple-touch-icon" href="icon.png">
+    <link rel="apple-touch-icon" href="icon.svg">
     <meta name="theme-color" content="#3b82f6">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
     <style>
@@ -347,6 +348,31 @@ def generate_index():
 
     with open(INDEX_PATH, 'w') as f:
         f.write(html_output)
+
+    # Update manifest to use SVG
+    manifest = """{
+  "name": "English Daily Hub",
+  "short_name": "EngDaily",
+  "description": "Daily English Learning Journey",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#3b82f6",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}"""
+    with open(MANIFEST_PATH, 'w') as f:
+        f.write(manifest)
+
+    # Update Service Worker version to force refresh
+    sw_content = f"const CACHE_NAME = 'eng-daily-v{int(time.time())}';\\nconst ASSETS = [\\n  './index.html',\\n  './manifest.json',\\n  './icon.svg'\\n];\\n\\nself.addEventListener('install', (event) => {{\\n  event.waitUntil(\\n    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))\\n  );\\n}});\\n\\nself.addEventListener('fetch', (event) => {{\\n  event.respondWith(\\n    caches.match(event.request).then((response) => {{\\n      return response || fetch(event.request);\\n    }})\\n  );\\n}});"
+    with open(SW_PATH, 'w') as f:
+        f.write(sw_content.replace('\\\\n', '\\n'))
 
 if __name__ == "__main__":
     generate_index()
