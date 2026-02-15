@@ -29,11 +29,17 @@ def get_lessons():
                         title = name_match.group(1) if name_match else date_str
                         if suffix == "_extra":
                             title = f"Extra: {title}"
+                            display_suffix = " (Extra)"
+                        elif suffix == "_mega":
+                            title = f"Mega: {title}"
+                            display_suffix = " (Mega)"
+                        else:
+                            display_suffix = ""
                     
                     lessons.append({
                         "date": date_str + suffix,
                         "sort_key": date_str + suffix,
-                        "display_date": date_obj.strftime("%b %d") + (" (Extra)" if suffix == "_extra" else ""),
+                        "display_date": date_obj.strftime("%b %d") + display_suffix,
                         "title": title,
                         "path": path
                     })
@@ -89,6 +95,8 @@ def generate_index(lessons):
         latest_date_full = datetime.strptime(latest['date'][:10], "%Y-%m-%d").strftime("%B %d, %Y").upper()
         if "_extra" in latest['date']:
             latest_date_full += " (EXTRA SESSION)"
+        elif "_mega" in latest['date']:
+            latest_date_full += " (MEGA SESSION)"
         audio_file = f"media/{latest['date']}_pronunciation.mp3"
         
         full_path = os.path.join(BASE_DIR, latest['path'])
