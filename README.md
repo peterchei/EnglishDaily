@@ -16,11 +16,12 @@ Scan the QR code below to access the live dashboard on your phone:
 
 ## 📊 Progress Dashboard
 - **Current Focus:** 🇬🇧 London Workplace & Social Idioms
-- **Daily Streak:** 🔥 8 Days
-- **Last Updated:** 2026-02-15
+- **Daily Streak:** 🔥 9 Days
+- **Last Updated:** 2026-02-15_extra
 
 ## 📅 Monthly Lessons
 ### 2026 February
+- **[Feb 15 (Extra): Extra: Moreish](lessons/vocabulary_2026-02-15_extra.md)**
 - **[Feb 15: Beat around the bush](lessons/vocabulary_2026-02-15.md)**
 - **[Feb 14: Affection](lessons/vocabulary_2026-02-14.md)**
 - **[Feb 13: Empathy](lessons/vocabulary_2026-02-13.md)**

@@ -17,24 +17,28 @@ def get_lessons():
         for file in files:
             if file.endswith(".md"):
                 path = os.path.relpath(os.path.join(root, file), BASE_DIR)
-                match = re.search(r"vocabulary_(\d{4}-\d{2}-\d{2})\.md", file)
+                match = re.search(r"vocabulary_(\d{4}-\d{2}-\d{2})(.*)\.md", file)
                 if match:
                     date_str = match.group(1)
+                    suffix = match.group(2)
                     date_obj = datetime.strptime(date_str, "%Y-%m-%d")
                     
                     with open(os.path.join(root, file), 'r', encoding='utf-8') as f:
                         content = f.read()
                         name_match = re.search(r"\d+\.\s+\*\*(.*?)\*\*", content)
                         title = name_match.group(1) if name_match else date_str
+                        if suffix == "_extra":
+                            title = f"Extra: {title}"
                     
                     lessons.append({
-                        "date": date_str,
-                        "display_date": date_obj.strftime("%b %d"),
+                        "date": date_str + suffix,
+                        "sort_key": date_str + suffix,
+                        "display_date": date_obj.strftime("%b %d") + (" (Extra)" if suffix == "_extra" else ""),
                         "title": title,
                         "path": path
                     })
     
-    lessons.sort(key=lambda x: x['date'], reverse=True)
+    lessons.sort(key=lambda x: x['sort_key'], reverse=True)
     return lessons
 
 def parse_markdown_content(content):
@@ -82,7 +86,9 @@ def generate_index(lessons):
     latest_date_full = ""
     audio_file = ""
     if latest:
-        latest_date_full = datetime.strptime(latest['date'], "%Y-%m-%d").strftime("%B %d, %Y").upper()
+        latest_date_full = datetime.strptime(latest['date'][:10], "%Y-%m-%d").strftime("%B %d, %Y").upper()
+        if "_extra" in latest['date']:
+            latest_date_full += " (EXTRA SESSION)"
         audio_file = f"media/{latest['date']}_pronunciation.mp3"
         
         full_path = os.path.join(BASE_DIR, latest['path'])
