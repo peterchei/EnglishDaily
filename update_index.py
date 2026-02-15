@@ -60,7 +60,7 @@ def parse_markdown_content(content):
         word_type = type_match.group(1) if type_match else ""
         
         def get_val(label):
-            m = re.search(rf"\*\*{label}\*\*[:：]\s*(.*)", block, re.IGNORECASE)
+            m = re.search(rf"\*\*{label}(?:\s*1)?\*\*[:：]\s*(.*)", block, re.IGNORECASE)
             return m.group(1).strip() if m else ""
 
         definition = get_val(r"(?:Definition|Meaning)")
