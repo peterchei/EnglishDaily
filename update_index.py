@@ -36,9 +36,15 @@ def get_lessons():
                         else:
                             display_suffix = ""
                     
+                    suffix_priority = 0
+                    if suffix == "_extra":
+                        suffix_priority = 1
+                    elif suffix == "_mega":
+                        suffix_priority = 2
+
                     lessons.append({
                         "date": date_str + suffix,
-                        "sort_key": date_str + suffix,
+                        "sort_key": (date_obj, suffix_priority),
                         "display_date": date_obj.strftime("%b %d") + display_suffix,
                         "title": title,
                         "path": path

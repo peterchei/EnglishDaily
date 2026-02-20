@@ -16,11 +16,12 @@ Scan the QR code below to access the live dashboard on your phone:
 
 ## 📊 Progress Dashboard
 - **Current Focus:** 🇬🇧 London Workplace & Social Idioms
-- **Daily Streak:** 🔥 11 Days
-- **Last Updated:** 2026-02-16
+- **Daily Streak:** 🔥 12 Days
+- **Last Updated:** 2026-02-20
 
 ## 📅 Monthly Lessons
 ### 2026 February
+- **[Feb 20: 2026-02-20](lessons/vocabulary_2026-02-20.md)**
 - **[Feb 16: Brushing](lessons/vocabulary_2026-02-16.md)**
 - **[Feb 15 (Mega): Mega: Oyster Card](lessons/vocabulary_2026-02-15_mega.md)**
 - **[Feb 15 (Extra): Extra: Moreish](lessons/vocabulary_2026-02-15_extra.md)**
