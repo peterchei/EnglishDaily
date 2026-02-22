@@ -18,63 +18,173 @@ def get_lessons():
             if file.endswith(".md"):
                 path = os.path.relpath(os.path.join(root, file), BASE_DIR)
                 match = re.search(r"vocabulary_(\d{4}-\d{2}-\d{2})(.*)\.md", file)
-                if match:
-                    date_str = match.group(1)
-                    suffix = match.group(2)
-                    date_obj = datetime.strptime(date_str, "%Y-%m-%d")
-                    
-                    with open(os.path.join(root, file), 'r', encoding='utf-8') as f:
-                        content = f.read()
-                        name_match = re.search(r"\d+\.\s+\*\*(.*?)\*\*", content)
-                        title = name_match.group(1) if name_match else date_str
-                        if suffix == "_extra":
-                            title = f"Extra: {title}"
-                            display_suffix = " (Extra)"
-                        elif suffix == "_mega":
-                            title = f"Mega: {title}"
-                            display_suffix = " (Mega)"
-                        else:
-                            display_suffix = ""
-                    
-                    suffix_priority = 0
-                    if suffix == "_extra":
-                        suffix_priority = 1
-                    elif suffix == "_mega":
-                        suffix_priority = 2
+                # Fallback for new file naming convention if needed (e.g., 2026-02-22.md)
+                # But currently get_lessons seems to rely on "vocabulary_YYYY-MM-DD"
+                # Wait, the new file is "content/2026-02-22.md" but get_lessons scans "lessons/" dir?
+                # Let's check where 2026-02-22.md is located.
+                # ls output showed: /home/peterchei/.openclaw/workspace/EnglishDaily/content/2026-02-22.md
+                # But get_lessons scans `LESSONS_DIR` which is `.../lessons`.
+                # If the new file is in `content/`, get_lessons won't find it!
+                
+                # I should update get_lessons to scan `content/` as well or instead.
+                # Or move the file. But the file structure seems to have changed to use `content/`.
+                pass
 
-                    lessons.append({
-                        "date": date_str + suffix,
-                        "sort_key": (date_obj, suffix_priority),
-                        "display_date": date_obj.strftime("%b %d") + display_suffix,
-                        "title": title,
-                        "path": path
-                    })
+    # Re-implementing get_lessons to handle both directories or new structure
+    # Let's look at existing files in `lessons/`.
+    # `ls -R` showed `lessons/` has `vocabulary_...md` files.
+    # `content/` has `2026-02-22.md`.
+    # So we need to scan both or prefer `content/`.
     
+    all_files = []
+    
+    # Scan lessons/
+    for root, dirs, files in os.walk(LESSONS_DIR):
+        for file in files:
+            if file.endswith(".md"):
+                all_files.append(os.path.join(root, file))
+                
+    # Scan content/
+    CONTENT_DIR = os.path.join(BASE_DIR, "content")
+    if os.path.exists(CONTENT_DIR):
+        for root, dirs, files in os.walk(CONTENT_DIR):
+            for file in files:
+                if file.endswith(".md"):
+                    all_files.append(os.path.join(root, file))
+
+    for full_path in all_files:
+        file = os.path.basename(full_path)
+        path = os.path.relpath(full_path, BASE_DIR)
+        
+        # Try matching YYYY-MM-DD in filename
+        date_match = re.search(r"(\d{4}-\d{2}-\d{2})", file)
+        if date_match:
+            date_str = date_match.group(1)
+            # Check for suffix
+            suffix = ""
+            if "_extra" in file: suffix = "_extra"
+            elif "_mega" in file: suffix = "_mega"
+            
+            try:
+                date_obj = datetime.strptime(date_str, "%Y-%m-%d")
+            except ValueError:
+                continue
+
+            with open(full_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+                # Try to extract title from # Header
+                title_match = re.search(r"^# (.*)", content)
+                if title_match:
+                    title = title_match.group(1).strip()
+                    # Remove "Daily English Lesson - YYYY-MM-DD" redundancy if preferred, or keep it.
+                    # Old script looked for `**Word**` to use as title? No, `title = name_match.group(1)`.
+                    # If multiple words, it used the first one?
+                    # The old script: `name_match = re.search(r"\d+\.\s+\*\*(.*?)\*\*", content)`
+                    # `title = name_match.group(1)`
+                    # So it named the lesson after the first word? That's... interesting.
+                    # Let's keep that behavior if possible, or use the file title.
+                    # The new file has `# Daily English Lesson ...`.
+                    # Let's try to find the first word.
+                    
+                    first_word_match = re.search(r"##\s*\d+\.\s+(.*?)(?:\(|$)", content)
+                    if not first_word_match:
+                         first_word_match = re.search(r"##\s*\d+\.\s+\*\*(.*?)\*\*", content)
+                    
+                    if first_word_match:
+                         # Use first word as title to match old style? 
+                         # Actually, let's use the Date or "Daily Lesson" if we can't find a word.
+                         # But the UI shows "Title" in the list.
+                         # If I use "Daily English Lesson - ...", it's long.
+                         # Let's use the first 3 words or something?
+                         # Or just "Daily Lesson".
+                         # Let's stick to "Daily Lesson" or the first word if found.
+                         title = first_word_match.group(1).strip()
+                    else:
+                         title = "Daily Lesson"
+                else:
+                    title = date_str
+
+                if suffix == "_extra":
+                    title = f"Extra: {title}"
+                    display_suffix = " (Extra)"
+                elif suffix == "_mega":
+                    title = f"Mega: {title}"
+                    display_suffix = " (Mega)"
+                else:
+                    display_suffix = ""
+            
+            suffix_priority = 0
+            if suffix == "_extra":
+                suffix_priority = 1
+            elif suffix == "_mega":
+                suffix_priority = 2
+
+            lessons.append({
+                "date": date_str + suffix,
+                "sort_key": (date_obj, suffix_priority),
+                "display_date": date_obj.strftime("%b %d") + display_suffix,
+                "title": title,
+                "path": path
+            })
+    
+    # Deduplicate by date (prefer content/ over lessons/ if duplicate? or just most recent)
+    # Dictionary to keep unique lessons
+    unique_lessons = {}
+    for l in lessons:
+        unique_lessons[l['date']] = l
+    
+    lessons = list(unique_lessons.values())
     lessons.sort(key=lambda x: x['sort_key'], reverse=True)
     return lessons
 
 def parse_markdown_content(content):
-    blocks = re.split(r'\n(?=\d+\.\s+\*\*)', content)
-    blocks = [b for b in blocks if re.search(r'\d+\.\s+\*\*', b)]
+    # Regex explanation:
+    # Split by lines that start with "## Number."
+    blocks = re.split(r'\n(?=##\s*\d+\.)', content)
+    # Filter out blocks that don't look like lesson items
+    blocks = [b for b in blocks if re.search(r'##\s*\d+\.', b)]
     
     html_output = ""
     for block in blocks:
-        name_match = re.search(r"\d+\.\s+\*\*(.*?)\*\*", block)
-        word_name = name_match.group(1) if name_match else "Word"
+        # Extract Word Name
+        # Try finding bold first: ## 1. **Word**
+        name_match = re.search(r"##\s*\d+\.\s+\*\*(.*?)\*\*", block)
+        if not name_match:
+            # Try finding plain text before parenthesis: ## 1. Word (Type)
+            name_match = re.search(r"##\s*\d+\.\s+(.*?)\s*\(", block)
         
-        type_match = re.search(r"\((.*?)\)", block)
+        word_name = name_match.group(1).strip() if name_match else "Word"
+        
+        # Type might be in the header line
+        header_line = block.split('\n')[0]
+        type_match = re.search(r"\((.*?)\)", header_line)
         word_type = type_match.group(1) if type_match else ""
         
         def get_val(label):
-            m = re.search(rf"\*\*{label}(?:\s*1)?\*\*[:：]\s*(.*)", block, re.IGNORECASE)
-            return m.group(1).strip() if m else ""
+            # Match **Label**[:：] value
+            # Allow optional colon inside/outside bold
+            pattern = rf"\*\*({label})(?:\s*\d+)?(?:[:：])?\*\*(?:[:：])?\s*([\s\S]*?)(?=\n\*\*|\n##|$)"
+            m = re.search(pattern, block, re.IGNORECASE)
+            if m:
+                return m.group(2).strip()
+            return ""
 
         definition = get_val(r"(?:Definition|Meaning)")
-        cantonese = get_val(r"(?:Cantonese Explanation|Cantonese)")
-        pronunciation = get_val(r"Pronunciation")
-        example = get_val(r"Example")
-        translation = get_val(r"(?:Translation|Cantonese Example)")
+        cantonese = get_val(r"(?:Cantonese Meaning|Cantonese)")
         
+        # Examples
+        ex1_match = re.search(r"\*\*Example(?:\s*1)?(?:[:：])?\*\*(?:[:：])?\s*\n?(.*?)(?=\n\*\*Cantonese|\n\*\*Example|\n##|$)", block, re.IGNORECASE | re.DOTALL)
+        ex1 = ex1_match.group(1).strip() if ex1_match else ""
+        
+        cant_ex1_match = re.search(r"\*\*Cantonese Example(?:\s*1)?(?:[:：])?\*\*(?:[:：])?\s*\n?(.*?)(?=\n\*\*Example|\n##|$)", block, re.IGNORECASE | re.DOTALL)
+        cant_ex1 = cant_ex1_match.group(1).strip() if cant_ex1_match else ""
+        
+        # Fallback to old keys
+        if not ex1: ex1 = get_val(r"Example")
+        if not cant_ex1: cant_ex1 = get_val(r"(?:Translation|Cantonese Example)")
+            
+        pronunciation = get_val(r"Pronunciation")
+
         html_output += f"""
                 <div class="word-item">
                     <div class="word-header">
@@ -85,8 +195,8 @@ def parse_markdown_content(content):
                     <p>{definition}</p>
                     <div class="translation">廣東話：{cantonese}</div>
                     <div class="example-box">
-                        {example}<br>
-                        {translation}
+                        {ex1}<br>
+                        {cant_ex1}
                     </div>
                 </div>"""
     return html_output
