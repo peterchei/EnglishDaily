@@ -1,10 +1,11 @@
+import json
 import os
 import re
 import time
 from datetime import datetime
 
-# Paths
-BASE_DIR = "/home/peterchei/.openclaw/workspace/EnglishDaily"
+# Paths — resolve relative to this script so it works both locally and in OpenClaw
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 LESSONS_DIR = os.path.join(BASE_DIR, "lessons")
 INDEX_PATH = os.path.join(BASE_DIR, "index.html")
 README_PATH = os.path.join(BASE_DIR, "README.md")
@@ -202,22 +203,25 @@ def parse_markdown_content(content):
     return html_output
 
 def generate_index(lessons):
-    latest = lessons[0] if lessons else None
-    
-    latest_content = ""
-    latest_date_full = ""
-    audio_file = ""
-    if latest:
-        latest_date_full = datetime.strptime(latest['date'][:10], "%Y-%m-%d").strftime("%B %d, %Y").upper()
-        if "_extra" in latest['date']:
-            latest_date_full += " (EXTRA SESSION)"
-        elif "_mega" in latest['date']:
-            latest_date_full += " (MEGA SESSION)"
-        audio_file = f"media/{latest['date']}_pronunciation.mp3"
-        
-        full_path = os.path.join(BASE_DIR, latest['path'])
+    # Build swipe-navigable lesson data: last 7 base lessons (no _extra/_mega)
+    base_lessons = [l for l in lessons if "_extra" not in l['date'] and "_mega" not in l['date']]
+    swipe_lessons = base_lessons[:7]
+
+    lessons_data = []
+    for lesson in swipe_lessons:
+        full_path = os.path.join(BASE_DIR, lesson['path'])
         with open(full_path, 'r', encoding='utf-8') as f:
-            latest_content = parse_markdown_content(f.read())
+            content_html = parse_markdown_content(f.read())
+        date_str = lesson['date'][:10]
+        display_date = datetime.strptime(date_str, "%Y-%m-%d").strftime("%B %d, %Y")
+        lessons_data.append({
+            "date": date_str,
+            "displayDate": display_date,
+            "title": lesson['title'],
+            "content": content_html,
+            "audioFile": f"media/{date_str}_pronunciation.mp3"
+        })
+    lessons_data_json = json.dumps(lessons_data, ensure_ascii=False)
 
     history_html = ""
     for lesson in lessons:
@@ -339,7 +343,7 @@ def generate_index(lessons):
         .word-text { font-size: 1.5rem; font-weight: bold; color: #fff; }
         .word-type { color: var(--accent); font-style: italic; font-size: 0.9rem; }
         .word-pron { font-family: monospace; color: var(--success); background: #0004; padding: 2px 6px; border-radius: 4px; font-size: 0.9rem; }
-        
+
         .translation { color: var(--subtext); font-size: 0.95rem; margin-top: 5px; margin-bottom: 10px; }
         .example-box { color: var(--subtext); border-left: 3px solid var(--accent); padding-left: 15px; font-style: italic; }
 
@@ -368,6 +372,62 @@ def generate_index(lessons):
             margin-bottom: 15px;
             border-left: 4px solid var(--funny);
         }
+
+        /* Lesson navigation bar */
+        .lesson-nav {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            padding: 4px 0;
+        }
+        .nav-btn {
+            background: var(--card-bg);
+            border: 1px solid var(--accent);
+            color: var(--accent);
+            font-size: 1.8rem;
+            line-height: 1;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s, color 0.2s;
+            user-select: none;
+            flex-shrink: 0;
+        }
+        .nav-btn:disabled { opacity: 0.25; cursor: default; }
+        .nav-btn:not(:disabled):hover { background: var(--accent); color: white; }
+        .nav-date {
+            color: var(--subtext);
+            font-size: 0.82rem;
+            text-align: center;
+            flex: 1;
+            padding: 0 10px;
+            letter-spacing: 0.05em;
+        }
+        .lesson-viewer {
+            overflow: hidden;
+            position: relative;
+        }
+        .swipe-hint {
+            text-align: center;
+            color: var(--subtext);
+            font-size: 0.75rem;
+            margin-top: 8px;
+            opacity: 0.55;
+            transition: opacity 0.5s;
+        }
+        .swipe-hint.hidden { opacity: 0; pointer-events: none; }
+        .audio-section { margin-top: 10px; }
+
+        /* Slide animations */
+        @keyframes slideInLeft  { from { transform: translateX(-60px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @keyframes slideInRight { from { transform: translateX(60px);  opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        .slide-in-left  { animation: slideInLeft  0.25s ease-out; }
+        .slide-in-right { animation: slideInRight 0.25s ease-out; }
 
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
@@ -403,14 +463,21 @@ def generate_index(lessons):
         <!-- TODAY SECTION -->
         <div id="today" class="content-section active">
             <div class="section-title">📚 Today's Lesson</div>
-            <div class="lesson-card">
-                <div style="color: var(--subtext); font-size: 0.8rem; margin-bottom: 20px;">{LATEST_DATE}</div>
-                {LATEST_CONTENT}
-                <div class="section-title" style="margin-top: 40px; font-size: 1.2rem;">🔊 Audio Guide</div>
-                <audio controls style="width: 100%;">
-                    <source src="{AUDIO_FILE}" type="audio/mpeg">
+            <div class="lesson-nav">
+                <button class="nav-btn" id="prevBtn" onclick="navigateLesson(1)" title="Previous day">&#8249;</button>
+                <span class="nav-date" id="lessonDateLabel"></span>
+                <button class="nav-btn" id="nextBtn" onclick="navigateLesson(-1)" title="Next day">&#8250;</button>
+            </div>
+            <div class="lesson-viewer">
+                <div class="lesson-card" id="lessonCard"></div>
+            </div>
+            <div class="audio-section">
+                <div class="section-title" style="font-size: 1.2rem;">🔊 Audio Guide</div>
+                <audio id="lessonAudio" controls style="width: 100%;">
+                    <source id="audioSource" src="" type="audio/mpeg">
                 </audio>
             </div>
+            <div class="swipe-hint" id="swipeHint">&#8592; swipe to browse lessons &#8594;</div>
         </div>
 
         <!-- HISTORY SECTION -->
@@ -439,17 +506,65 @@ def generate_index(lessons):
     </div>
 
     <script>
+        const LESSONS_DATA = {LESSONS_DATA_JSON};
+        let currentIndex = 0;
+
+        function renderLesson(index, direction) {
+            const lesson = LESSONS_DATA[index];
+            const card = document.getElementById('lessonCard');
+
+            if (direction !== 0) {
+                const animClass = direction > 0 ? 'slide-in-left' : 'slide-in-right';
+                card.classList.remove('slide-in-left', 'slide-in-right');
+                void card.offsetWidth; // force reflow to restart animation
+                card.classList.add(animClass);
+            }
+
+            card.innerHTML = lesson.content;
+            document.getElementById('lessonDateLabel').textContent = lesson.displayDate.toUpperCase();
+
+            const audioSource = document.getElementById('audioSource');
+            audioSource.src = lesson.audioFile;
+            document.getElementById('lessonAudio').load();
+
+            document.getElementById('prevBtn').disabled = (index >= LESSONS_DATA.length - 1);
+            document.getElementById('nextBtn').disabled = (index <= 0);
+        }
+
+        function navigateLesson(direction) {
+            const newIndex = currentIndex + direction;
+            if (newIndex < 0 || newIndex >= LESSONS_DATA.length) return;
+            currentIndex = newIndex;
+            renderLesson(currentIndex, direction);
+            document.getElementById('swipeHint').classList.add('hidden');
+        }
+
+        // Touch swipe detection
+        let touchStartX = 0, touchStartY = 0;
+        document.addEventListener('touchstart', e => {
+            touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
+        }, { passive: true });
+
+        document.addEventListener('touchend', e => {
+            if (!document.getElementById('today').classList.contains('active')) return;
+            const dx = e.changedTouches[0].clientX - touchStartX;
+            const dy = e.changedTouches[0].clientY - touchStartY;
+            if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy)) {
+                navigateLesson(dx < 0 ? 1 : -1);
+            }
+        }, { passive: true });
+
         function showTab(tabId, event) {
             document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             const activeTab = document.getElementById(tabId);
-            if (activeTab) {
-                activeTab.classList.add('active');
-            }
-            if (event) {
-                event.currentTarget.classList.add('active');
-            }
+            if (activeTab) activeTab.classList.add('active');
+            if (event) event.currentTarget.classList.add('active');
         }
+
+        // Initialize
+        if (LESSONS_DATA.length > 0) renderLesson(0, 0);
 
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
@@ -464,12 +579,10 @@ def generate_index(lessons):
 """
     html_output = html_template.replace("{WORDS_COUNT}", str(len(lessons) * 3))
     html_output = html_output.replace("{STREAK}", str(len(lessons)))
-    html_output = html_output.replace("{LATEST_DATE}", latest_date_full)
-    html_output = html_output.replace("{LATEST_CONTENT}", latest_content)
-    html_output = html_output.replace("{AUDIO_FILE}", audio_file)
+    html_output = html_output.replace("{LESSONS_DATA_JSON}", lessons_data_json)
     html_output = html_output.replace("{HISTORY_HTML}", history_html)
 
-    with open(INDEX_PATH, 'w') as f:
+    with open(INDEX_PATH, 'w', encoding='utf-8') as f:
         f.write(html_output)
 
 def generate_readme(lessons):
@@ -508,7 +621,7 @@ Scan the QR code below to access the live dashboard on your phone:
 ---
 *“Success is the sum of small efforts, repeated day in and day out.”*
 """
-    with open(README_PATH, 'w') as f:
+    with open(README_PATH, 'w', encoding='utf-8') as f:
         f.write(readme_content)
 
 if __name__ == "__main__":
@@ -533,11 +646,11 @@ if __name__ == "__main__":
     }
   ]
 }"""
-    with open(MANIFEST_PATH, 'w') as f:
+    with open(MANIFEST_PATH, 'w', encoding='utf-8') as f:
         f.write(manifest)
 
     # Update Service Worker
     sw_version = int(time.time())
     sw_content = f"const CACHE_NAME = 'eng-daily-v{sw_version}';\\nconst ASSETS = [\\n  './index.html',\\n  './manifest.json',\\n  './icon.svg'\\n];\\n\\nself.addEventListener('install', (event) => {{\\n  event.waitUntil(\\n    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))\\n  );\\n}});\\n\\nself.addEventListener('fetch', (event) => {{\\n  event.respondWith(\\n    caches.match(event.request).then((response) => {{\\n      return response || fetch(event.request);\\n    }})\\n  );\\n}});"
-    with open(SW_PATH, 'w') as f:
+    with open(SW_PATH, 'w', encoding='utf-8') as f:
         f.write(sw_content.replace('\\\\n', '\\n'))
