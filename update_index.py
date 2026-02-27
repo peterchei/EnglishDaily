@@ -14,44 +14,13 @@ MANIFEST_PATH = os.path.join(BASE_DIR, "manifest.json")
 
 def get_lessons():
     lessons = []
-    for root, dirs, files in os.walk(LESSONS_DIR):
-        for file in files:
-            if file.endswith(".md"):
-                path = os.path.relpath(os.path.join(root, file), BASE_DIR)
-                match = re.search(r"vocabulary_(\d{4}-\d{2}-\d{2})(.*)\.md", file)
-                # Fallback for new file naming convention if needed (e.g., 2026-02-22.md)
-                # But currently get_lessons seems to rely on "vocabulary_YYYY-MM-DD"
-                # Wait, the new file is "content/2026-02-22.md" but get_lessons scans "lessons/" dir?
-                # Let's check where 2026-02-22.md is located.
-                # ls output showed: /home/peterchei/.openclaw/workspace/EnglishDaily/content/2026-02-22.md
-                # But get_lessons scans `LESSONS_DIR` which is `.../lessons`.
-                # If the new file is in `content/`, get_lessons won't find it!
-                
-                # I should update get_lessons to scan `content/` as well or instead.
-                # Or move the file. But the file structure seems to have changed to use `content/`.
-                pass
-
-    # Re-implementing get_lessons to handle both directories or new structure
-    # Let's look at existing files in `lessons/`.
-    # `ls -R` showed `lessons/` has `vocabulary_...md` files.
-    # `content/` has `2026-02-22.md`.
-    # So we need to scan both or prefer `content/`.
-    
     all_files = []
-    
-    # Scan lessons/
+
+    # Scan lessons/ recursively (includes subfolders like 2026-02/, Lessons/)
     for root, dirs, files in os.walk(LESSONS_DIR):
         for file in files:
             if file.endswith(".md"):
                 all_files.append(os.path.join(root, file))
-                
-    # Scan content/
-    CONTENT_DIR = os.path.join(BASE_DIR, "content")
-    if os.path.exists(CONTENT_DIR):
-        for root, dirs, files in os.walk(CONTENT_DIR):
-            for file in files:
-                if file.endswith(".md"):
-                    all_files.append(os.path.join(root, file))
 
     for full_path in all_files:
         file = os.path.basename(full_path)
@@ -128,8 +97,7 @@ def get_lessons():
                 "path": path
             })
     
-    # Deduplicate by date (prefer content/ over lessons/ if duplicate? or just most recent)
-    # Dictionary to keep unique lessons
+    # Deduplicate by date key (date + suffix)
     unique_lessons = {}
     for l in lessons:
         unique_lessons[l['date']] = l
