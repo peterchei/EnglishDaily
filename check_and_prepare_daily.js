@@ -126,7 +126,7 @@ try {
     // Construct the command
     // We need to escape the message content for shell
     const escapedSummary = summary.replace(/"/g, '\\"').replace(/\$/g, '\\$');
-    let msgCmd = `${OPENCLAW_CLI} message send --target "${TARGET_ID}" --message "${escapedSummary}"`;
+    let msgCmd = `${OPENCLAW_CLI} message send --channel telegram --target "${TARGET_ID}" --message "${escapedSummary}"`;
     
     if (audio) {
         msgCmd += ` --media "${audio}"`;
