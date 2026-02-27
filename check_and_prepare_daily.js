@@ -3,11 +3,12 @@
 const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
+const { buildTTSScript, parseTelegramSummary } = require('./lib/lesson-utils');
 
 // ── Config from environment ──────────────────────────────────────────────────
-const GEMINI_API_KEY    = process.env.GEMINI_API_KEY;
+const GEMINI_API_KEY     = process.env.GEMINI_API_KEY;
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-const TELEGRAM_CHAT_ID  = process.env.TELEGRAM_CHAT_ID;
+const TELEGRAM_CHAT_ID   = process.env.TELEGRAM_CHAT_ID;
 
 if (!GEMINI_API_KEY)     { console.error('[ERROR] GEMINI_API_KEY is not set.'); process.exit(1); }
 if (!TELEGRAM_BOT_TOKEN) { console.error('[ERROR] TELEGRAM_BOT_TOKEN is not set.'); process.exit(1); }
@@ -96,40 +97,7 @@ Begin the file with:
     return content;
 }
 
-// ── Step 2: Build TTS script (English-only narration) ───────────────────────
-function buildTTSScript(markdown) {
-    const blocks = markdown.split(/\n(?=##\s*\d+\.)/);
-    const items = blocks.filter(b => /##\s*\d+\./.test(b));
-
-    let script = 'Hello everyone! Welcome to your daily English lesson. ' +
-                 `Today is ${new Date().toLocaleDateString('en-GB', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}. ` +
-                 `We have ${items.length} words for you today.\n\n`;
-
-    items.forEach((block, i) => {
-        const wordMatch = block.match(/##\s*\d+\.\s+\*\*(.*?)\*\*/);
-        const pronMatch = block.match(/\*\*Pronunciation[:\*]*\*?\*?\s*[:：]?\s*(.+)/);
-        const defMatch  = block.match(/\*\*Definition[:\*]*\*?\*?\s*[:：]?\s*(.+)/);
-        const ex1Match  = block.match(/\*\*Example 1[:\*]*\*?\*?\s*[:：]?\s*\n?([\s\S]*?)(?=\n\*\*Cantonese Example|\n\*\*Example 2|\n##|$)/);
-
-        if (!wordMatch) return;
-
-        const word = wordMatch[1].trim();
-        const pron = pronMatch ? pronMatch[1].replace(/\*+/g, '').trim() : '';
-        const def  = defMatch  ? defMatch[1].replace(/\*+/g, '').trim() : '';
-        const ex1  = ex1Match  ? ex1Match[1].replace(/\*+/g, '').replace(/\n/g, ' ').trim() : '';
-
-        script += `Word ${i + 1}: ${word}.\n`;
-        if (pron) script += `Pronunciation: ${pron}.\n`;
-        if (def)  script += `Definition: ${def}\n`;
-        if (ex1)  script += `Example: ${ex1}\n`;
-        script += '\n';
-    });
-
-    script += "That's all for today's lesson. Keep practising and have a wonderful day!";
-    return script.replace(/\*\*/g, '').replace(/\*/g, '').replace(/`/g, '').trim();
-}
-
-// ── Step 3: Generate audio via Google TTS ───────────────────────────────────
+// ── Step 2: Generate audio via Google TTS ────────────────────────────────────
 async function generateAudio(markdown) {
     if (fs.existsSync(audioFile)) {
         console.log(`[INFO] Audio file already exists: ${audioFile}`);
@@ -162,14 +130,14 @@ async function generateAudio(markdown) {
     console.log(`[INFO] Audio saved → ${audioFile}`);
 }
 
-// ── Step 4: Update dashboard ─────────────────────────────────────────────────
+// ── Step 3: Update dashboard ──────────────────────────────────────────────────
 function updateDashboard() {
     console.log('[INFO] Updating dashboard...');
     execSync('python update_index.py', { cwd: BASE_DIR, stdio: 'inherit' });
     console.log('[INFO] Dashboard updated.');
 }
 
-// ── Step 5: Git commit and push ──────────────────────────────────────────────
+// ── Step 4: Git commit and push ───────────────────────────────────────────────
 function gitPush() {
     console.log('[INFO] Committing and pushing to GitHub...');
     execSync('git add lessons/ media/ index.html README.md sw.js manifest.json', { cwd: BASE_DIR, stdio: 'inherit' });
@@ -178,29 +146,10 @@ function gitPush() {
     console.log('[INFO] Pushed to GitHub.');
 }
 
-// ── Step 6: Send Telegram summary ───────────────────────────────────────────
-function parseTelegramSummary(markdown) {
-    const blocks = markdown.split(/\n(?=##\s*\d+\.)/);
-    let summary = `📚 *Daily English Lesson — ${today}*\n\n*Today's Vocabulary:*\n`;
-    let i = 1;
-
-    blocks.forEach(block => {
-        const wordMatch = block.match(/##\s*\d+\.\s+\*\*(.*?)\*\*/);
-        const cantMatch = block.match(/\*\*Cantonese Meaning[:\*]*\*?\*?\s*[:：]?\s*(.+)/);
-        if (!wordMatch) return;
-        const word = wordMatch[1].trim();
-        const cant = cantMatch ? cantMatch[1].replace(/\*+/g, '').trim() : '';
-        summary += `${i}. *${word}*${cant ? ` — ${cant}` : ''}\n`;
-        i++;
-    });
-
-    summary += `\nThe dashboard has been updated\\. Have a great day\\! 🚀`;
-    return summary;
-}
-
+// ── Step 5: Send Telegram summary ─────────────────────────────────────────────
 async function sendTelegram(markdown) {
     console.log('[INFO] Sending Telegram message...');
-    const message = parseTelegramSummary(markdown);
+    const message = parseTelegramSummary(markdown, today);
 
     const res = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
         method: 'POST',
@@ -219,7 +168,7 @@ async function sendTelegram(markdown) {
     console.log('[INFO] Telegram message sent.');
 }
 
-// ── Main ─────────────────────────────────────────────────────────────────────
+// ── Main ──────────────────────────────────────────────────────────────────────
 async function main() {
     console.log(`[INFO] Starting daily lesson for ${today}`);
     try {

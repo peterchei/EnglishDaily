@@ -1,1 +1,3 @@
-__pycache__/update_index.cpython-314.pyc
+__pycache__/
+node_modules/
+.env

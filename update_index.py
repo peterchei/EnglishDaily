@@ -24,7 +24,7 @@ def get_lessons():
 
     for full_path in all_files:
         file = os.path.basename(full_path)
-        path = os.path.relpath(full_path, BASE_DIR)
+        path = os.path.relpath(full_path, BASE_DIR).replace('\\', '/')
         
         # Try matching YYYY-MM-DD in filename
         date_match = re.search(r"(\d{4}-\d{2}-\d{2})", file)
@@ -587,7 +587,7 @@ Scan the QR code below to access the live dashboard on your phone:
 {history_md}
 
 ---
-*“Success is the sum of small efforts, repeated day in and day out.”*
+*”Success is the sum of small efforts, repeated day in and day out.”*
 """
     with open(README_PATH, 'w', encoding='utf-8') as f:
         f.write(readme_content)

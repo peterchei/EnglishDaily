@@ -16,16 +16,14 @@ Scan the QR code below to access the live dashboard on your phone:
 
 ## 📊 Progress Dashboard
 - **Current Focus:** 🇬🇧 London Workplace & Social Idioms
-- **Daily Streak:** 🔥 19 Days
-- **Last Updated:** 2026-02-27
+- **Daily Streak:** 🔥 17 Days
+- **Last Updated:** 2026-02-24
 
 ## 📅 Monthly Lessons
 ### 2026 February
-- **[Feb 27: Daily Lesson](lessons/vocabulary_2026-02-27.md)**
-- **[Feb 25: Daily Lesson](content/2026-02-25.md)**
-- **[Feb 24: **Ephemeral**](content/2026-02-24.md)**
-- **[Feb 23: **Imminent**](content/2026-02-23.md)**
-- **[Feb 22: Catch up](content/2026-02-22.md)**
+- **[Feb 24: Daily Lesson](lessons/vocabulary_2026-02-24.md)**
+- **[Feb 23: **Imminent**](lessons/vocabulary_2026-02-23.md)**
+- **[Feb 22: Catch up](lessons/vocabulary_2026-02-22.md)**
 - **[Feb 20: Daily Lesson](lessons/vocabulary_2026-02-20.md)**
 - **[Feb 18: **Evolve**](lessons/Lessons/2026-02-18.md)**
 - **[Feb 17: **Resilience**](lessons/Lessons/2026-02-17.md)**
@@ -43,4 +41,4 @@ Scan the QR code below to access the live dashboard on your phone:
 
 
 ---
-*“Success is the sum of small efforts, repeated day in and day out.”*
+*”Success is the sum of small efforts, repeated day in and day out.”*

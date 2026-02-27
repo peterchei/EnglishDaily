@@ -42,22 +42,19 @@ EnglishDaily ("Mastering the London Flow") is a self-contained daily English lea
 
 ## File Structure
 
-```
-check_and_prepare_daily.js   # Main entry point (cron target)
-update_index.py              # Dashboard regenerator
-state.json                   # Idempotency tracker (sent lessons)
-lessons/                     # Lesson markdown files
-  vocabulary_YYYY-MM-DD.md   # Standard lesson
-  2026-02/                   # Month subfolders (older lessons)
-  Lessons/                   # Named subfolders (older lessons)
-content/                     # Alternative location for new lessons (also scanned)
-media/                       # Audio files
-  YYYY-MM-DD_pronunciation.mp3
-docs/                        # Design and implementation documentation
-index.html                   # Generated PWA dashboard (do not edit manually)
-sw.js                        # Generated service worker (do not edit manually)
-manifest.json                # Generated PWA manifest (do not edit manually)
-```
+| File / Folder | Purpose |
+|---|---|
+| `check_and_prepare_daily.js` | Main cron entry point — generates lesson, audio, updates dashboard, pushes to GitHub, sends Telegram |
+| `update_index.py` | Regenerates `index.html`, `README.md`, `sw.js`, `manifest.json` from lesson files |
+| `lib/lesson-utils.js` | Shared pure functions for TTS script building and Telegram summary parsing |
+| `test/` | Unit tests — run with `npm test` |
+| `lessons/` | All lesson markdown files (`vocabulary_YYYY-MM-DD.md`, with subfolders `2026-02/`, `Lessons/` for older entries) |
+| `media/` | Pronunciation audio (`YYYY-MM-DD_pronunciation.mp3`) |
+| `docs/` | Design and implementation documentation |
+| `state.json` | Tracks which lessons have been sent (idempotency — prevents duplicate deliveries) |
+| `index.html` | Generated PWA dashboard — do not edit manually |
+| `sw.js` | Generated service worker — do not edit manually |
+| `manifest.json` | Generated PWA manifest — do not edit manually |
 
 ---
 
