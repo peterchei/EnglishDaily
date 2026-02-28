@@ -140,7 +140,7 @@ function updateDashboard() {
 // ── Step 4: Git commit and push ───────────────────────────────────────────────
 function gitPush() {
     console.log('[INFO] Committing and pushing to GitHub...');
-    execSync('git add lessons/ media/ index.html README.md sw.js manifest.json', { cwd: BASE_DIR, stdio: 'inherit' });
+    execSync('git add lessons/ media/ lib/ index.html README.md sw.js manifest.json', { cwd: BASE_DIR, stdio: 'inherit' });
     execSync(`git commit -m "Daily update: ${today}"`, { cwd: BASE_DIR, stdio: 'inherit' });
     execSync('git push', { cwd: BASE_DIR, stdio: 'inherit' });
     console.log('[INFO] Pushed to GitHub.');
