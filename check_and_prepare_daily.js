@@ -97,37 +97,67 @@ Begin the file with:
     return content;
 }
 
-// ── Step 2: Generate audio via Google TTS ────────────────────────────────────
+// ── Step 2: Generate audio via Google TTS (with edge-tts fallback) ───────────
+const os = require('os');
+
 async function generateAudio(markdown) {
     if (fs.existsSync(audioFile)) {
         console.log(`[INFO] Audio file already exists: ${audioFile}`);
         return;
     }
 
-    console.log('[INFO] Generating audio with Google TTS...');
     const ttsText = buildTTSScript(markdown);
 
-    const url = `https://texttospeech.googleapis.com/v1/text:synthesize?key=${GEMINI_API_KEY}`;
-    const res = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            input: { text: ttsText },
-            voice: { languageCode: 'en-GB', name: 'en-GB-Neural2-B' },
-            audioConfig: { audioEncoding: 'MP3', speakingRate: 0.9 }
-        })
-    });
-
-    const data = await res.json();
-    if (!res.ok) {
+    // ── 2a. Try Google TTS ────────────────────────────────────────────────────
+    console.log('[INFO] Attempting audio with Google TTS...');
+    try {
+        const url = `https://texttospeech.googleapis.com/v1/text:synthesize?key=${GEMINI_API_KEY}`;
+        const res = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                input: { text: ttsText },
+                voice: { languageCode: 'en-GB', name: 'en-GB-Neural2-B' },
+                audioConfig: { audioEncoding: 'MP3', speakingRate: 0.9 }
+            })
+        });
+        const data = await res.json();
+        if (res.ok && data.audioContent) {
+            const mp3Buffer = Buffer.from(data.audioContent, 'base64');
+            fs.writeFileSync(audioFile, mp3Buffer);
+            console.log(`[INFO] Audio saved (Google TTS) → ${audioFile}`);
+            return;
+        }
         console.warn(`[WARN] Google TTS failed (${res.status}): ${JSON.stringify(data)}`);
-        console.warn('[WARN] Continuing without audio.');
+    } catch (e) {
+        console.warn(`[WARN] Google TTS error: ${e.message}`);
+    }
+
+    // ── 2b. Fall back to edge-tts ─────────────────────────────────────────────
+    const edgeTtsScript = process.env.EDGE_TTS_SCRIPT ||
+        '/home/peterchei/.openclaw/workspace/skills/edge-tts/scripts/tts-converter.js';
+
+    if (!fs.existsSync(edgeTtsScript)) {
+        console.warn(`[WARN] edge-tts not found at ${edgeTtsScript}. Skipping audio.`);
         return;
     }
 
-    const mp3Buffer = Buffer.from(data.audioContent, 'base64');
-    fs.writeFileSync(audioFile, mp3Buffer);
-    console.log(`[INFO] Audio saved → ${audioFile}`);
+    console.log('[INFO] Falling back to edge-tts...');
+    const tmpFile = path.join(os.tmpdir(), `tts-${today}.txt`);
+    try {
+        fs.writeFileSync(tmpFile, ttsText, 'utf8');
+        execSync(
+            `node "${edgeTtsScript}" --input "${tmpFile}" --output "${audioFile}" --voice en-GB-RyanNeural`,
+            { cwd: BASE_DIR, stdio: 'inherit' }
+        );
+        console.log(`[INFO] Audio saved (edge-tts) → ${audioFile}`);
+    } catch (e) {
+        console.warn(`[WARN] edge-tts failed: ${e.message}`);
+        console.warn('[WARN] Continuing without audio.');
+        if (fs.existsSync(audioFile)) fs.unlinkSync(audioFile); // remove partial file
+    } finally {
+        if (fs.existsSync(tmpFile)) fs.unlinkSync(tmpFile);
+    }
 }
 
 // ── Step 3: Update dashboard ──────────────────────────────────────────────────
