@@ -147,7 +147,7 @@ async function generateAudio(markdown) {
     try {
         fs.writeFileSync(tmpFile, ttsText, 'utf8');
         execSync(
-            `node "${edgeTtsScript}" --input "${tmpFile}" --output "${audioFile}" --voice en-GB-RyanNeural`,
+            `node "${edgeTtsScript}" "${tmpFile}" --output "${audioFile}" --voice en-GB-RyanNeural`,
             { cwd: BASE_DIR, stdio: 'inherit' }
         );
         console.log(`[INFO] Audio saved (edge-tts) → ${audioFile}`);
