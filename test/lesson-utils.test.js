@@ -2,7 +2,7 @@
 
 const { test, describe } = require('node:test');
 const assert = require('node:assert/strict');
-const { buildTTSScript, parseTelegramSummary } = require('../lib/lesson-utils');
+const { buildTTSScript, parseTelegramSummary, escapeMarkdownV2 } = require('../lib/lesson-utils');
 
 // ── Shared fixture ────────────────────────────────────────────────────────────
 const SAMPLE_MARKDOWN = `# Daily English Lesson - 2026-02-27
@@ -53,11 +53,53 @@ Her writing captures the nuances of everyday London life.
 她的寫作捕捉了倫敦日常生活的細微之處。
 `;
 
+// ── escapeMarkdownV2 ──────────────────────────────────────────────────────────
+describe('escapeMarkdownV2', () => {
+    test('escapes hyphens in dates', () => {
+        assert.equal(escapeMarkdownV2('2026-02-28'), '2026\\-02\\-28');
+    });
+
+    test('escapes dots', () => {
+        assert.equal(escapeMarkdownV2('Hello.'), 'Hello\\.');
+    });
+
+    test('escapes exclamation marks', () => {
+        assert.equal(escapeMarkdownV2('Great!'), 'Great\\!');
+    });
+
+    test('escapes parentheses', () => {
+        assert.equal(escapeMarkdownV2('(noun)'), '\\(noun\\)');
+    });
+
+    test('escapes underscores', () => {
+        assert.equal(escapeMarkdownV2('some_var'), 'some\\_var');
+    });
+
+    test('leaves Chinese characters untouched', () => {
+        assert.equal(escapeMarkdownV2('有韌性的'), '有韌性的');
+    });
+
+    test('leaves plain English words untouched', () => {
+        assert.equal(escapeMarkdownV2('Resilient'), 'Resilient');
+    });
+
+    test('handles empty string', () => {
+        assert.equal(escapeMarkdownV2(''), '');
+    });
+});
+
 // ── parseTelegramSummary ──────────────────────────────────────────────────────
 describe('parseTelegramSummary', () => {
-    test('includes the date in the header', () => {
+    test('includes the date in the header (escaped for MarkdownV2)', () => {
         const result = parseTelegramSummary(SAMPLE_MARKDOWN, '2026-02-27');
-        assert.ok(result.includes('2026-02-27'), 'Header should contain the date');
+        // Hyphens in dates must be escaped as \- for Telegram MarkdownV2
+        assert.ok(result.includes('2026\\-02\\-27'), 'Header should contain the escaped date');
+    });
+
+    test('does not contain unescaped hyphens in the date', () => {
+        const result = parseTelegramSummary(SAMPLE_MARKDOWN, '2026-02-27');
+        // The raw date '2026-02-27' must not appear unescaped
+        assert.ok(!result.includes('2026-02-27'), 'Raw unescaped date must not be present');
     });
 
     test('lists every word', () => {
@@ -69,9 +111,9 @@ describe('parseTelegramSummary', () => {
 
     test('includes Cantonese meanings', () => {
         const result = parseTelegramSummary(SAMPLE_MARKDOWN, '2026-02-27');
-        assert.ok(result.includes('有韌性的'),    'Should include Cantonese for Resilient');
-        assert.ok(result.includes('堅持'),        'Should include Cantonese for Persevere');
-        assert.ok(result.includes('細微差別'),    'Should include Cantonese for Nuance');
+        assert.ok(result.includes('有韌性的'),  'Should include Cantonese for Resilient');
+        assert.ok(result.includes('堅持'),      'Should include Cantonese for Persevere');
+        assert.ok(result.includes('細微差別'),  'Should include Cantonese for Nuance');
     });
 
     test('numbers words starting from 1', () => {
@@ -93,14 +135,14 @@ describe('parseTelegramSummary', () => {
 
     test('handles markdown with no words gracefully', () => {
         const result = parseTelegramSummary('# Daily English Lesson - 2026-02-27\n\nNo words here.', '2026-02-27');
-        assert.ok(result.includes('2026-02-27'), 'Header still present with empty lesson');
-        assert.ok(!result.includes('undefined'),  'Should not contain "undefined"');
+        assert.ok(result.includes('2026\\-02\\-27'), 'Header still present with escaped date');
+        assert.ok(!result.includes('undefined'), 'Should not contain "undefined"');
     });
 
-    test('uses different date when passed', () => {
+    test('uses different date when passed (escaped)', () => {
         const result = parseTelegramSummary(SAMPLE_MARKDOWN, '2099-12-31');
-        assert.ok(result.includes('2099-12-31'), 'Should use the provided date');
-        assert.ok(!result.includes('2026-02-27'), 'Should not use the fixture date');
+        assert.ok(result.includes('2099\\-12\\-31'),  'Should use the provided date (escaped)');
+        assert.ok(!result.includes('2026\\-02\\-27'), 'Should not use the fixture date');
     });
 });
 
