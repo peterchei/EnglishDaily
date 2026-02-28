@@ -20,8 +20,9 @@ EnglishDaily ("Mastering the London Flow") is a self-contained daily English lea
           └─────────────┬──────────────┘
                         │
           ┌─────────────▼──────────────┐
-          │  2. Google TTS API         │  generates pronunciation audio
-          │     (en-GB-Neural2-B)      │  → media/YYYY-MM-DD_pronunciation.mp3
+          │  2. Audio (TTS)            │  generates pronunciation audio
+          │     Google TTS → edge-tts │  → media/YYYY-MM-DD_pronunciation.mp3
+          │     → skip if both fail   │
           └─────────────┬──────────────┘
                         │
           ┌─────────────▼──────────────┐
@@ -70,14 +71,28 @@ On every run, the script reads `state.json`. If `state[today].sent === true`, it
 - **Output:** Saved as `lessons/vocabulary_YYYY-MM-DD.md`
 - **Skip condition:** If the lesson file already exists, generation is skipped
 
-### Step 2 — Audio Generation (Google TTS API)
+### Step 2 — Audio Generation (Google TTS → edge-tts fallback)
+
+Audio is attempted in order. If one method fails, the next is tried. Execution always continues even if all methods fail (audio is optional).
+
+**Method A — Google TTS API** (primary)
 - **Voice:** `en-GB-Neural2-B` (British English, Neural)
 - **API:** `https://texttospeech.googleapis.com/v1/text:synthesize?key=GEMINI_API_KEY`
-- **Content:** English-only narration built from lesson markdown (word, pronunciation, definition, example 1)
-- **Output:** Saved as `media/YYYY-MM-DD_pronunciation.mp3` (base64 decoded from API response)
-- **Error handling:** If TTS API fails (e.g., key not enabled for TTS), a warning is logged and execution continues without audio
+- **Output:** Base64-decoded MP3 saved to `media/YYYY-MM-DD_pronunciation.mp3`
+- **Failure:** Logs a warning and falls through to edge-tts. Common failure: `API_KEY_SERVICE_BLOCKED` (when the API key is restricted to Gemini only in Google Cloud Console)
 
-> **Note:** `GEMINI_API_KEY` is used for both Gemini and Google TTS. The underlying Google Cloud project must have the **Cloud Text-to-Speech API** enabled for TTS to work.
+**Method B — edge-tts** (fallback)
+- **Script:** `EDGE_TTS_SCRIPT` env var, or defaults to `/home/peterchei/.openclaw/workspace/skills/edge-tts/scripts/tts-converter.js`
+- **Voice:** `en-GB-RyanNeural`
+- **Command:**
+  ```bash
+  node tts-converter.js --input /tmp/tts-YYYY-MM-DD.txt --output media/YYYY-MM-DD_pronunciation.mp3 --voice en-GB-RyanNeural
+  ```
+- **Failure:** Logs a warning and continues without audio
+
+**Content (both methods):** English-only narration built by `buildTTSScript()` in `lib/lesson-utils.js` — word name, IPA pronunciation, definition, and first example sentence for each word. Cantonese sections are excluded.
+
+**Skip condition:** If the audio file already exists, TTS is skipped entirely.
 
 ### Step 3 — Dashboard Update
 ```bash
@@ -87,7 +102,7 @@ Regenerates `index.html`, `README.md`, `sw.js`, and `manifest.json`. The script 
 
 ### Step 4 — Git Push
 ```bash
-git add lessons/ media/ index.html README.md sw.js manifest.json
+git add lessons/ media/ lib/ index.html README.md sw.js manifest.json
 git commit -m "Daily update: YYYY-MM-DD"
 git push
 ```
@@ -106,7 +121,7 @@ The Python script regenerates the full static site from lesson markdown files.
 
 | Function | Purpose |
 |----------|---------|
-| `get_lessons()` | Scans `lessons/` (recursively) and `content/` for `*.md` with a date in the filename |
+| `get_lessons()` | Scans `lessons/` recursively for `*.md` files with a date in the filename |
 | `parse_markdown_content(content)` | Converts lesson markdown to HTML word cards |
 | `generate_index(lessons)` | Builds `index.html` with inline `LESSONS_DATA` JSON for offline PWA |
 | `generate_readme(lessons)` | Updates `README.md` with lesson history |
@@ -120,17 +135,18 @@ The Python script regenerates the full static site from lesson markdown files.
 **Lesson scanning rules:**
 - Any `.md` file containing a `YYYY-MM-DD` date pattern in the filename is included
 - `_extra` / `_mega` suffixes create variant lessons (excluded from swipe navigation)
-- If the same date exists in both `lessons/` and `content/`, the last-processed wins
+- Subfolders like `2026-02/` and `Lessons/` inside `lessons/` are included automatically
 
 ---
 
 ## Environment Variables
 
-| Variable | Purpose |
-|----------|---------|
-| `GEMINI_API_KEY` | Google AI API key — used for Gemini lesson generation AND Google TTS |
-| `TELEGRAM_BOT_TOKEN` | Telegram Bot API token |
-| `TELEGRAM_CHAT_ID` | Telegram recipient chat ID |
+| Variable | Required | Purpose |
+|----------|----------|---------|
+| `GEMINI_API_KEY` | Yes | Google AI API key — Gemini lesson generation; also attempted for Google TTS (optional) |
+| `TELEGRAM_BOT_TOKEN` | Yes | Telegram Bot API token |
+| `TELEGRAM_CHAT_ID` | Yes | Telegram recipient chat ID |
+| `EDGE_TTS_SCRIPT` | No | Path to `tts-converter.js`. Defaults to `/home/peterchei/.openclaw/workspace/skills/edge-tts/scripts/tts-converter.js` |
 
 Set these in the OpenClaw cron environment or a `.env` file (not committed).
 
