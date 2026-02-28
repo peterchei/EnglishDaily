@@ -116,11 +116,12 @@ describe('parseTelegramSummary', () => {
         assert.ok(result.includes('細微差別'),  'Should include Cantonese for Nuance');
     });
 
-    test('numbers words starting from 1', () => {
+    test('numbers words starting from 1 (dots escaped for MarkdownV2)', () => {
         const result = parseTelegramSummary(SAMPLE_MARKDOWN, '2026-02-27');
-        assert.ok(result.includes('1.'), 'Should have item 1');
-        assert.ok(result.includes('2.'), 'Should have item 2');
-        assert.ok(result.includes('3.'), 'Should have item 3');
+        assert.ok(result.includes('1\\.'), 'Should have item 1 with escaped dot');
+        assert.ok(result.includes('2\\.'), 'Should have item 2 with escaped dot');
+        assert.ok(result.includes('3\\.'), 'Should have item 3 with escaped dot');
+        assert.ok(!result.match(/(?<!\\)\d+\./), 'No unescaped numbered dots');
     });
 
     test('ends with the closing message', () => {
