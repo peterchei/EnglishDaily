@@ -144,7 +144,7 @@ async function generateAudio(markdown) {
     const result = spawnSync('node', [
         edgeTtsScript, ttsText,
         '--output', audioFile,
-        '--voice', 'en-GB-RyanNeural'
+        '--voice', 'en-GB-LibbyNeural'
     ], { cwd: BASE_DIR, stdio: 'inherit' });
     if (result.status === 0) {
         console.log(`[INFO] Audio saved (edge-tts) → ${audioFile}`);

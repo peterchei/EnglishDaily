@@ -83,10 +83,10 @@ Audio is attempted in order. If one method fails, the next is tried. Execution a
 
 **Method B — edge-tts** (fallback)
 - **Script:** `EDGE_TTS_SCRIPT` env var, or defaults to `/home/peterchei/.openclaw/workspace/skills/edge-tts/scripts/tts-converter.js`
-- **Voice:** `en-GB-RyanNeural`
+- **Voice:** `en-GB-LibbyNeural` (British English, female)
 - **Command:**
   ```bash
-  node tts-converter.js "<narration text>" --output media/YYYY-MM-DD_pronunciation.mp3 --voice en-GB-RyanNeural
+  node tts-converter.js "<narration text>" --output media/YYYY-MM-DD_pronunciation.mp3 --voice en-GB-LibbyNeural
   ```
 - **Failure:** Logs a warning and continues without audio
 
