@@ -86,7 +86,7 @@ Audio is attempted in order. If one method fails, the next is tried. Execution a
 - **Voice:** `en-GB-RyanNeural`
 - **Command:**
   ```bash
-  node tts-converter.js /tmp/tts-YYYY-MM-DD.txt --output media/YYYY-MM-DD_pronunciation.mp3 --voice en-GB-RyanNeural
+  node tts-converter.js "<narration text>" --output media/YYYY-MM-DD_pronunciation.mp3 --voice en-GB-RyanNeural
   ```
 - **Failure:** Logs a warning and continues without audio
 
