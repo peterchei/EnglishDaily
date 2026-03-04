@@ -54,9 +54,10 @@ aimed at a Cantonese speaker learning British English.
 Requirements:
 1. For each word, provide: IPA pronunciation, English definition, Cantonese Meaning, \
 and exactly TWO English example sentences each followed by a Cantonese translation.
-2. Use the markdown format below exactly — do not add extra sections.
-3. Do NOT use the word "Master" anywhere. Use "Hello everyone" or "Hi there" instead.
-4. Output ONLY the markdown content, starting with the # header.
+2. Use the markdown format below EXACTLY — do not deviate, add sections, or change field names.
+3. Word names MUST be wrapped in **double asterisks** as shown. Field labels must match exactly.
+4. Do NOT use the word "Master" anywhere. Use "Hello everyone" or "Hi there" instead.
+5. Output ONLY the markdown content, starting with the # header.
 
 Format for each entry:
 ## N. **Word** (Part of Speech)
