@@ -21,7 +21,7 @@ Scan the QR code below to access the live dashboard on your phone:
 
 ## 📅 Monthly Lessons
 ### 2026 February
-- **[Mar 07: **Chuffed**](lessons/vocabulary_2026-03-07.md)**
+- **[Mar 07: Daily Lesson](lessons/vocabulary_2026-03-07.md)**
 - **[Mar 06: **Queue**](lessons/vocabulary_2026-03-06.md)**
 - **[Mar 05: Daily Lesson](lessons/vocabulary_2026-03-05.md)**
 - **[Mar 04: Serendipity](lessons/vocabulary_2026-03-04.md)**
