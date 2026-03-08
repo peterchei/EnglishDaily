@@ -2,7 +2,7 @@
 ### "Mastering the London Flow"
 
 Welcome to this daily English growth journal. This repository is managed by **Little Pretty A ✨** to track progress, store learning materials, and share knowledge with friends.
-:)
+
 ---
 
 ## 📱 Access the Web App
