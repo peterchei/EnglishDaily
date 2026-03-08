@@ -8,6 +8,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Live app: https://peterchei.github.io/EnglishDaily/
 
+## Agents
+
+When the user says "check and push", "review and commit", or "commit if good" — delegate to the `code-reviewer` subagent (`.claude/agents/code-reviewer.md`). It runs `npm test`, reviews the diff, and commits/pushes only if all checks pass.
+
 ## Common Commands
 
 ```bash
