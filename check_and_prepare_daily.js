@@ -1,6 +1,7 @@
 'use strict';
 
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
 const { execSync, spawnSync } = require('child_process');
 const { buildTTSScript, parseTelegramSummary } = require('./lib/lesson-utils');
@@ -149,9 +150,28 @@ async function generateAudio(markdown) {
     ], { cwd: BASE_DIR, stdio: 'inherit' });
     if (result.status === 0) {
         console.log(`[INFO] Audio saved (edge-tts) → ${audioFile}`);
-    } else {
-        console.warn(`[WARN] edge-tts failed (exit ${result.status}). Continuing without audio.`);
-        if (fs.existsSync(audioFile)) fs.unlinkSync(audioFile);
+        return;
+    }
+    console.warn(`[WARN] edge-tts failed (exit ${result.status}). Trying Python edge-tts...`);
+    if (fs.existsSync(audioFile)) fs.unlinkSync(audioFile);
+
+    // ── 2c. Fall back to Python edge-tts CLI ─────────────────────────────────
+    const tmpTextFile = path.join(os.tmpdir(), `tts_text_${today}.txt`);
+    try {
+        fs.writeFileSync(tmpTextFile, ttsText, 'utf8');
+        const pyResult = spawnSync('edge-tts', [
+            '--voice', 'en-GB-LibbyNeural',
+            '--file', tmpTextFile,
+            '--write-media', audioFile
+        ], { cwd: BASE_DIR, stdio: 'inherit' });
+        if (pyResult.status === 0) {
+            console.log(`[INFO] Audio saved (Python edge-tts) → ${audioFile}`);
+        } else {
+            console.warn(`[WARN] Python edge-tts also failed. Continuing without audio.`);
+            if (fs.existsSync(audioFile)) fs.unlinkSync(audioFile);
+        }
+    } finally {
+        if (fs.existsSync(tmpTextFile)) fs.unlinkSync(tmpTextFile);
     }
 }
 

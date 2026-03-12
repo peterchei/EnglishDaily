@@ -166,11 +166,11 @@ describe('buildTTSScript', () => {
         assert.ok(result.includes('Word 3: Nuance'),    'Should label word 3');
     });
 
-    test('includes pronunciation for each word', () => {
+    test('does not include IPA pronunciation notation', () => {
         const result = buildTTSScript(SAMPLE_MARKDOWN);
-        assert.ok(result.includes('rɪˈzɪliənt'), 'Should include IPA for Resilient');
-        assert.ok(result.includes('pɜːsɪˈvɪə'),  'Should include IPA for Persevere');
-        assert.ok(result.includes('njuːɑːns'),    'Should include IPA for Nuance');
+        assert.ok(!result.includes('rɪˈzɪliənt'), 'Should not include IPA for Resilient');
+        assert.ok(!result.includes('pɜːsɪˈvɪə'),  'Should not include IPA for Persevere');
+        assert.ok(!result.includes('njuːɑːns'),    'Should not include IPA for Nuance');
     });
 
     test('includes English definitions', () => {
