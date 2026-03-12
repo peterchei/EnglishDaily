@@ -28,13 +28,15 @@ const audioFile  = path.join(MEDIA_DIR,   `${today}_pronunciation.mp3`);
 fs.mkdirSync(LESSONS_DIR, { recursive: true });
 fs.mkdirSync(MEDIA_DIR,   { recursive: true });
 
+const REGEN_AUDIO = process.argv.includes('--regen-audio');
+
 // ── State check ──────────────────────────────────────────────────────────────
 let state = {};
 try {
     if (fs.existsSync(STATE_FILE)) state = JSON.parse(fs.readFileSync(STATE_FILE, 'utf8'));
 } catch (e) { console.error('[WARN] Could not read state.json:', e.message); }
 
-if (state[today] && state[today].sent) {
+if (!REGEN_AUDIO && state[today] && state[today].sent) {
     console.log(`[INFO] Lesson for ${today} already sent. Exiting.`);
     process.exit(0);
 }
@@ -217,6 +219,25 @@ async function sendTelegram(markdown) {
 async function main() {
     console.log(`[INFO] Starting daily lesson for ${today}`);
     try {
+        if (REGEN_AUDIO) {
+            if (!fs.existsSync(lessonFile)) {
+                console.error(`[ERROR] No lesson file for today: ${lessonFile}`);
+                process.exit(1);
+            }
+            console.log('[INFO] --regen-audio: regenerating audio only (no Telegram, no state update).');
+            if (fs.existsSync(audioFile)) fs.unlinkSync(audioFile);
+            const lessonContent = fs.readFileSync(lessonFile, 'utf8');
+            await generateAudio(lessonContent);
+            if (fs.existsSync(audioFile)) {
+                execSync('git add media/', { cwd: BASE_DIR, stdio: 'inherit' });
+                execSync(`git commit -m "Regen audio: ${today}"`, { cwd: BASE_DIR, stdio: 'inherit' });
+                execSync('git push', { cwd: BASE_DIR, stdio: 'inherit' });
+                console.log('[INFO] Audio committed and pushed.');
+            }
+            console.log('[INFO] Done.');
+            return;
+        }
+
         const lessonContent = await generateLesson();
         await generateAudio(lessonContent);
         updateDashboard();
