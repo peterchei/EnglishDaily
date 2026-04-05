@@ -2,7 +2,10 @@
 
 const { test, describe } = require('node:test');
 const assert = require('node:assert/strict');
-const { buildTTSScript, parseTelegramSummary, escapeMarkdownV2 } = require('../lib/lesson-utils');
+const fs = require('node:fs');
+const path = require('node:path');
+const os = require('node:os');
+const { buildTTSScript, parseTelegramSummary, escapeMarkdownV2, getPreviouslyTaughtWords, fetchBBCNewsContext } = require('../lib/lesson-utils');
 
 // ── Shared fixture ────────────────────────────────────────────────────────────
 const SAMPLE_MARKDOWN = `# Daily English Lesson - 2026-02-27
@@ -226,5 +229,82 @@ The beauty of cherry blossoms is ephemeral.
     test('handles empty markdown without throwing', () => {
         assert.doesNotThrow(() => buildTTSScript(''), 'Should not throw on empty input');
         assert.doesNotThrow(() => buildTTSScript('# Title only'), 'Should not throw on title-only input');
+    });
+});
+
+// ── getPreviouslyTaughtWords ─────────────────────────────────────────────────
+describe('getPreviouslyTaughtWords', () => {
+    test('extracts words from lesson files', () => {
+        const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'lesson-test-'));
+        fs.writeFileSync(path.join(tmpDir, 'vocabulary_2026-01-01.md'), SAMPLE_MARKDOWN);
+        try {
+            const words = getPreviouslyTaughtWords(tmpDir);
+            assert.ok(words.includes('resilient'), 'Should include resilient (lowercased)');
+            assert.ok(words.includes('persevere'), 'Should include persevere');
+            assert.ok(words.includes('nuance'), 'Should include nuance');
+            assert.equal(words.length, 3, 'Should find exactly 3 words');
+        } finally {
+            fs.rmSync(tmpDir, { recursive: true });
+        }
+    });
+
+    test('returns sorted unique list', () => {
+        const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'lesson-test-'));
+        fs.writeFileSync(path.join(tmpDir, 'vocabulary_2026-01-01.md'), SAMPLE_MARKDOWN);
+        fs.writeFileSync(path.join(tmpDir, 'vocabulary_2026-01-02.md'), SAMPLE_MARKDOWN);
+        try {
+            const words = getPreviouslyTaughtWords(tmpDir);
+            assert.equal(words.length, 3, 'Duplicates should be removed');
+            assert.deepEqual(words, [...words].sort(), 'Should be sorted');
+        } finally {
+            fs.rmSync(tmpDir, { recursive: true });
+        }
+    });
+
+    test('scans subdirectories', () => {
+        const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'lesson-test-'));
+        const subDir = path.join(tmpDir, '2026-01');
+        fs.mkdirSync(subDir);
+        fs.writeFileSync(path.join(subDir, 'vocabulary_2026-01-01.md'), SAMPLE_MARKDOWN);
+        try {
+            const words = getPreviouslyTaughtWords(tmpDir);
+            assert.ok(words.length > 0, 'Should find words in subdirectories');
+        } finally {
+            fs.rmSync(tmpDir, { recursive: true });
+        }
+    });
+
+    test('returns empty array for empty directory', () => {
+        const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'lesson-test-'));
+        try {
+            const words = getPreviouslyTaughtWords(tmpDir);
+            assert.deepEqual(words, []);
+        } finally {
+            fs.rmSync(tmpDir, { recursive: true });
+        }
+    });
+
+    test('ignores non-vocabulary files', () => {
+        const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'lesson-test-'));
+        fs.writeFileSync(path.join(tmpDir, 'README.md'), '## 1. **FakeWord** (Noun)\n');
+        try {
+            const words = getPreviouslyTaughtWords(tmpDir);
+            assert.deepEqual(words, [], 'Should not pick up words from non-vocabulary files');
+        } finally {
+            fs.rmSync(tmpDir, { recursive: true });
+        }
+    });
+});
+
+// ── fetchBBCNewsContext ──────────────────────────────────────────────────────
+describe('fetchBBCNewsContext', () => {
+    test('returns a string', async () => {
+        const result = await fetchBBCNewsContext();
+        assert.equal(typeof result, 'string', 'Should return a string');
+    });
+
+    test('does not throw on network errors', async () => {
+        // fetchBBCNewsContext should handle errors gracefully
+        await assert.doesNotReject(() => fetchBBCNewsContext(), 'Should not reject');
     });
 });

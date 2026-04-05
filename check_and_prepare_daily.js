@@ -4,7 +4,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const { execSync, spawnSync } = require('child_process');
-const { buildTTSScript, parseTelegramSummary } = require('./lib/lesson-utils');
+const { buildTTSScript, parseTelegramSummary, getPreviouslyTaughtWords, fetchBBCNewsContext } = require('./lib/lesson-utils');
 
 // ── Config from environment ──────────────────────────────────────────────────
 const GEMINI_API_KEY     = process.env.GEMINI_API_KEY;
@@ -50,10 +50,32 @@ async function generateLesson() {
 
     console.log('[INFO] Generating lesson with Gemini...');
 
+    // Build dedup list from all previous lessons
+    const taughtWords = getPreviouslyTaughtWords(LESSONS_DIR);
+    const dedupBlock = taughtWords.length > 0
+        ? `\n\nIMPORTANT — Do NOT reuse any of these previously taught words/phrases:\n${taughtWords.join(', ')}\n`
+        : '';
+
+    // Fetch BBC News for topical vocabulary context
+    let newsBlock = '';
+    try {
+        console.log('[INFO] Fetching BBC News for vocabulary context...');
+        const newsContext = await fetchBBCNewsContext();
+        if (newsContext) {
+            newsBlock = `\n\nHere are today's BBC News headlines. Pick vocabulary that appears in or relates to these news stories, \
+so the learner studies words that are relevant to current events:\n${newsContext}\n`;
+            console.log('[INFO] BBC News context fetched successfully.');
+        } else {
+            console.log('[INFO] No BBC News context available, using general vocabulary.');
+        }
+    } catch (e) {
+        console.warn(`[WARN] BBC News fetch failed: ${e.message}. Using general vocabulary.`);
+    }
+
     const prompt = `Please prepare today's English lesson dated ${today}. \
 Select 6-7 useful words or phrases suitable for a 5-minute teaching session \
 aimed at a Cantonese speaker learning British English.
-
+${newsBlock}${dedupBlock}
 Requirements:
 1. For each word, provide: IPA pronunciation, English definition, Cantonese Meaning, \
 and exactly TWO English example sentences each followed by a Cantonese translation.
@@ -61,6 +83,8 @@ and exactly TWO English example sentences each followed by a Cantonese translati
 3. Word names MUST be wrapped in **double asterisks** as shown. Field labels must match exactly.
 4. Do NOT use the word "Master" anywhere. Use "Hello everyone" or "Hi there" instead.
 5. Output ONLY the markdown content, starting with the # header.
+6. Every word MUST be different from the previously taught words listed above. Choose fresh, diverse vocabulary.
+7. Prefer words that a Cantonese speaker would encounter in British news, workplace, or daily life.
 
 Format for each entry:
 ## N. **Word** (Part of Speech)
