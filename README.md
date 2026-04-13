@@ -21,14 +21,14 @@ Scan the QR code below to access the live dashboard on your phone:
 
 ## 📅 Monthly Lessons
 ### 2026 February
-- **[Apr 13: Daily Lesson](lessons/vocabulary_2026-04-13.md)**
-- **[Apr 12: Daily Lesson](lessons/vocabulary_2026-04-12.md)**
-- **[Apr 11: Daily Lesson](lessons/vocabulary_2026-04-11.md)**
-- **[Apr 10: Daily Lesson](lessons/vocabulary_2026-04-10.md)**
-- **[Apr 09: Daily Lesson](lessons/vocabulary_2026-04-09.md)**
-- **[Apr 08: Daily Lesson](lessons/vocabulary_2026-04-08.md)**
+- **[Apr 13: **Oust**](lessons/vocabulary_2026-04-13.md)**
+- **[Apr 12: **Truce**](lessons/vocabulary_2026-04-12.md)**
+- **[Apr 11: **Shelve**](lessons/vocabulary_2026-04-11.md)**
+- **[Apr 10: **Reshuffling**](lessons/vocabulary_2026-04-10.md)**
+- **[Apr 09: **Respite**](lessons/vocabulary_2026-04-09.md)**
+- **[Apr 08: **Ceasefire**](lessons/vocabulary_2026-04-08.md)**
 - **[Apr 07: **Ultimatum**](lessons/vocabulary_2026-04-07.md)**
-- **[Apr 06: Daily Lesson](lessons/vocabulary_2026-04-06.md)**
+- **[Apr 06: **Unfold**](lessons/vocabulary_2026-04-06.md)**
 - **[Apr 05: **Cheeky**](lessons/vocabulary_2026-04-05.md)**
 - **[Apr 04: **Cheers**](lessons/vocabulary_2026-04-04.md)**
 - **[Apr 03: **Queue**](lessons/vocabulary_2026-04-03.md)**

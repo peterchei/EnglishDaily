@@ -56,9 +56,9 @@ def get_lessons():
                     # The new file has `# Daily English Lesson ...`.
                     # Let's try to find the first word.
                     
-                    first_word_match = re.search(r"##\s*\d+\.\s+(.*?)(?:\(|$)", content)
+                    first_word_match = re.search(r"##\s*(?:\d+|N)\.\s+(.*?)(?:\(|$)", content)
                     if not first_word_match:
-                         first_word_match = re.search(r"##\s*\d+\.\s+\*\*(.*?)\*\*", content)
+                         first_word_match = re.search(r"##\s*(?:\d+|N)\.\s+\*\*(.*?)\*\*", content)
                     
                     if first_word_match:
                          # Use first word as title to match old style? 
@@ -108,19 +108,19 @@ def get_lessons():
 
 def parse_markdown_content(content):
     # Regex explanation:
-    # Split by lines that start with "## Number."
-    blocks = re.split(r'\n(?=##\s*\d+\.)', content)
+    # Split by lines that start with "## Number." or "## N."
+    blocks = re.split(r'\n(?=##\s*(?:\d+|N)\.)', content)
     # Filter out blocks that don't look like lesson items
-    blocks = [b for b in blocks if re.search(r'##\s*\d+\.', b)]
+    blocks = [b for b in blocks if re.search(r'##\s*(?:\d+|N)\.', b)]
     
     html_output = ""
     for block in blocks:
         # Extract Word Name
         # Try finding bold first: ## 1. **Word**
-        name_match = re.search(r"##\s*\d+\.\s+\*\*(.*?)\*\*", block)
+        name_match = re.search(r"##\s*(?:\d+|N)\.\s+\*\*(.*?)\*\*", block)
         if not name_match:
             # Try finding plain text before parenthesis: ## 1. Word (Type)
-            name_match = re.search(r"##\s*\d+\.\s+(.*?)\s*\(", block)
+            name_match = re.search(r"##\s*(?:\d+|N)\.\s+(.*?)\s*\(", block)
         
         word_name = name_match.group(1).strip() if name_match else "Word"
         

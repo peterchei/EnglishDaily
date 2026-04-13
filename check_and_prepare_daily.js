@@ -86,8 +86,8 @@ and exactly TWO English example sentences each followed by a Cantonese translati
 6. Every word MUST be different from the previously taught words listed above. Choose fresh, diverse vocabulary.
 7. Prefer words that a Cantonese speaker would encounter in British news, workplace, or daily life.
 
-Format for each entry:
-## N. **Word** (Part of Speech)
+Format for each entry (number sequentially: 1, 2, 3, ...):
+## 1. **Word** (Part of Speech)
 **Pronunciation:** /IPA/
 **Definition:** English definition here.
 **Cantonese Meaning:** 廣東話意思
