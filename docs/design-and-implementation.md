@@ -15,14 +15,20 @@ EnglishDaily ("Mastering the London Flow") is a self-contained daily English lea
 └───────────────────────┬─────────────────────────────────┘
                         │
           ┌─────────────▼──────────────┐
+          │  0. Preparation            │  a) scan all lessons → dedup word list
+          │                            │  b) fetch BBC News RSS → topical context
+          └─────────────┬──────────────┘
+                        │
+          ┌─────────────▼──────────────┐
           │  1. Gemini API             │  generates lesson markdown
-          │     (gemini-2.0-flash)     │  → lessons/vocabulary_YYYY-MM-DD.md
+          │     (gemini-2.0-flash)     │  (with dedup list + BBC context in prompt)
+          │                            │  → lessons/vocabulary_YYYY-MM-DD.md
           └─────────────┬──────────────┘
                         │
           ┌─────────────▼──────────────┐
           │  2. Audio (TTS)            │  generates pronunciation audio
-          │     Google TTS → edge-tts │  → media/YYYY-MM-DD_pronunciation.mp3
-          │     → skip if both fail   │
+          │     Google TTS → edge-tts  │  → media/YYYY-MM-DD_pronunciation.mp3
+          │     → skip if both fail    │
           └─────────────┬──────────────┘
                         │
           ┌─────────────▼──────────────┐
@@ -47,7 +53,7 @@ EnglishDaily ("Mastering the London Flow") is a self-contained daily English lea
 |---|---|
 | `check_and_prepare_daily.js` | Main cron entry point — generates lesson, audio, updates dashboard, pushes to GitHub, sends Telegram |
 | `update_index.py` | Regenerates `index.html`, `README.md`, `sw.js`, `manifest.json` from lesson files |
-| `lib/lesson-utils.js` | Shared pure functions for TTS script building and Telegram summary parsing |
+| `lib/lesson-utils.js` | Shared pure functions: TTS script building, Telegram summary parsing, word dedup extraction, BBC News fetching |
 | `test/` | Unit tests — run with `npm test` |
 | `lessons/` | All lesson markdown files (`vocabulary_YYYY-MM-DD.md`, with subfolders `2026-02/`, `Lessons/` for older entries) |
 | `media/` | Pronunciation audio (`YYYY-MM-DD_pronunciation.mp3`) |
@@ -64,10 +70,29 @@ EnglishDaily ("Mastering the London Flow") is a self-contained daily English lea
 ### Idempotency
 On every run, the script reads `state.json`. If `state[today].sent === true`, it exits immediately. This prevents duplicate deliveries when cron re-runs.
 
+### Step 0 — Preparation (Dedup + BBC News)
+
+Before calling Gemini, two preparation steps enrich the prompt:
+
+**a) Word deduplication — `getPreviouslyTaughtWords()`**
+- Recursively scans all `lessons/` files (including subfolders) for `vocabulary_*.md`
+- Extracts every word heading (`## N. **Word** ...`), lowercased and deduplicated
+- The sorted word list is injected into the Gemini prompt as an exclusion list
+- Prevents the chronic repetition problem (e.g. "Queue" appeared 23 times before this fix)
+
+**b) BBC News context — `fetchBBCNewsContext()`**
+- Fetches RSS feeds from 3 BBC channels: top stories, world news, technology
+- Extracts up to 12 headline + description pairs via simple XML parsing
+- Injected into the Gemini prompt so vocabulary is sourced from current events
+- 10-second timeout per feed; graceful fallback to general vocabulary on failure
+- RSS feeds: `feeds.bbci.co.uk/news/rss.xml`, `.../world/rss.xml`, `.../technology/rss.xml`
+
 ### Step 1 — Lesson Generation (Gemini API)
 - **Model:** `gemini-2.0-flash`
 - **API:** `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=GEMINI_API_KEY`
-- **Prompt:** Requests 6-7 British English words/phrases with IPA, definition, Cantonese meaning, and 2 bilingual example sentences each
+- **Prompt:** Requests 6-7 British English words/phrases with IPA, definition, Cantonese meaning, and 2 bilingual example sentences each. The prompt includes:
+  - A list of all previously taught words with instructions to never reuse them
+  - BBC News headlines/summaries with instructions to pick vocabulary relevant to current events
 - **Output:** Saved as `lessons/vocabulary_YYYY-MM-DD.md`
 - **Skip condition:** If the lesson file already exists, generation is skipped
 
@@ -90,7 +115,7 @@ Audio is attempted in order. If one method fails, the next is tried. Execution a
   ```
 - **Failure:** Logs a warning and continues without audio
 
-**Content (both methods):** English-only narration built by `buildTTSScript()` in `lib/lesson-utils.js` — word name, IPA pronunciation, definition, and first example sentence for each word. Cantonese sections are excluded.
+**Content (both methods):** English-only narration built by `buildTTSScript()` in `lib/lesson-utils.js` — word name, definition, and first example sentence for each word. IPA pronunciation lines and Cantonese sections are excluded.
 
 **Skip condition:** If the audio file already exists, TTS is skipped entirely.
 
@@ -112,6 +137,20 @@ Requires git credentials/SSH keys configured in the runtime environment.
 - **API:** `https://api.telegram.org/bot{TOKEN}/sendMessage`
 - **Format:** MarkdownV2, text-only (no audio attachment per requirements)
 - **Content:** Word list with Cantonese meanings
+
+---
+
+## Utility Library: lib/lesson-utils.js
+
+Pure functions with no side effects (except `fetchBBCNewsContext` which makes HTTP requests). Fully unit-tested.
+
+| Function | Purpose |
+|----------|---------|
+| `buildTTSScript(markdown)` | Builds English-only TTS narration from lesson markdown (strips IPA and Cantonese) |
+| `parseTelegramSummary(markdown, today)` | Builds MarkdownV2-formatted Telegram message with word list and Cantonese meanings |
+| `escapeMarkdownV2(text)` | Escapes all 18 Telegram MarkdownV2 reserved characters |
+| `getPreviouslyTaughtWords(lessonsDir)` | Recursively scans lesson files, returns sorted unique lowercased word list for deduplication |
+| `fetchBBCNewsContext()` | Fetches BBC News RSS feeds (top, world, technology), returns up to 12 headline summaries for topical vocabulary |
 
 ---
 

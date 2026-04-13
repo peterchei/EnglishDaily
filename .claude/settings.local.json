@@ -7,7 +7,8 @@
       "Bash(grep -h '## [0-9]' lessons/vocabulary_2026-04-*.md lessons/vocabulary_2026-03-3*.md)",
       "Bash(sed 's/\\\\*\\\\*.*//')",
       "Bash(grep -rh '## [0-9]' lessons/vocabulary_*.md lessons/2026-02/vocabulary_*.md lessons/Lessons/vocabulary_*.md)",
-      "Bash(node -e \"const { fetchBBCNewsContext } = require\\('./lib/lesson-utils'\\); fetchBBCNewsContext\\(\\).then\\(r => console.log\\(r ? r.substring\\(0, 500\\) : '\\(empty\\)'\\)\\);\")"
+      "Bash(node -e \"const { fetchBBCNewsContext } = require\\('./lib/lesson-utils'\\); fetchBBCNewsContext\\(\\).then\\(r => console.log\\(r ? r.substring\\(0, 500\\) : '\\(empty\\)'\\)\\);\")",
+      "Bash(npm test:*)"
     ]
   }
 }
