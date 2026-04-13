@@ -8,7 +8,10 @@
       "Bash(sed 's/\\\\*\\\\*.*//')",
       "Bash(grep -rh '## [0-9]' lessons/vocabulary_*.md lessons/2026-02/vocabulary_*.md lessons/Lessons/vocabulary_*.md)",
       "Bash(node -e \"const { fetchBBCNewsContext } = require\\('./lib/lesson-utils'\\); fetchBBCNewsContext\\(\\).then\\(r => console.log\\(r ? r.substring\\(0, 500\\) : '\\(empty\\)'\\)\\);\")",
-      "Bash(npm test:*)"
+      "Bash(npm test:*)",
+      "Bash(python update_index.py)",
+      "Bash(git add:*)",
+      "Bash(git commit -m ':*)"
     ]
   }
 }
