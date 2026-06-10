@@ -1,7 +1,26 @@
 # English Learning Journey 🚀
 ### "Mastering the London Flow"
 
-Welcome to this daily English growth journal. This repository is managed by **Little Pretty A ✨** to track progress, store learning materials, and share knowledge with friends.
+**Fully AI-Powered | Zero Human Intervention | Automated Daily Delivery**
+
+Welcome to this daily English growth journal. This repository is **fully automated and maintained by AI** — a cron job runs every morning to generate fresh lessons, create pronunciation audio, update the PWA dashboard, and deliver a Telegram summary. No manual work required.
+
+---
+
+## ✨ What Makes EnglishDaily Special
+
+EnglishDaily is a **self-maintaining, AI-driven daily English learning system** designed for Cantonese speakers:
+
+- **🤖 100% AI-Powered Generation** — Each morning, Gemini 2.0 Flash creates a new lesson from scratch, complete with vocabulary, pronunciations, definitions, and bilingual examples
+- **🔄 Fully Automated Pipeline** — A single cron job orchestrates everything:
+  - Generates the day's lesson via AI
+  - Creates pronunciation audio (Google TTS, with edge-tts fallback)
+  - Rebuilds the PWA dashboard and static site
+  - Commits and pushes to GitHub
+  - Sends a Telegram notification to the user
+- **⏰ Zero Human Intervention** — Runs unattended, 24/7, with automatic error handling and fallbacks
+- **📱 Progressive Web App** — Responsive dashboard with offline support, swipe navigation, and daily lesson updates
+- **🗣️ Bilingual Learning** — English vocabulary + Cantonese translations, with pronunciation guides and real-world examples
 
 ---
 
@@ -18,6 +37,7 @@ Scan the QR code below to access the live dashboard on your phone:
 - **Current Focus:** 🇬🇧 London Workplace & Social Idioms
 - **Daily Streak:** 🔥 107 Days
 - **Last Updated:** 2026-06-01
+- **Automation Status:** ✅ Running 24/7
 
 ## 📅 Monthly Lessons
 ### 2026 February
@@ -131,4 +151,29 @@ Scan the QR code below to access the live dashboard on your phone:
 
 
 ---
-*”Success is the sum of small efforts, repeated day in and day out.”*
+
+## 🛠️ How It Works
+
+**Daily Automation Pipeline:**
+1. **Cron Trigger** — Every morning at a scheduled time on OpenClaw (Linux server)
+2. **Lesson Generation** — Gemini 2.0 Flash AI creates a new vocabulary lesson with context-appropriate words, definitions, and bilingual examples
+3. **Audio Creation** — Google Text-to-Speech synthesizes English-only pronunciation audio (fallback to edge-tts if needed)
+4. **Site Regeneration** — Python script rebuilds the PWA dashboard, updates the lesson index, and generates the service worker cache
+5. **Git Operations** — Automatic commit and push to GitHub Pages for instant live deployment
+6. **User Notification** — Sends a MarkdownV2-formatted Telegram message with the day's lesson summary
+7. **State Tracking** — Records completion to prevent duplicate deliveries
+
+---
+
+## 🚀 Technology Stack
+
+- **AI Engine** — Gemini 2.0 Flash (lesson & content generation)
+- **Text-to-Speech** — Google TTS + edge-tts fallback (pronunciation audio)
+- **Backend** — Node.js (orchestration) + Python (site generation)
+- **Frontend** — HTML5 PWA with offline service worker + vanilla JavaScript
+- **Deployment** — GitHub Pages (static hosting) + Linux cron (automation)
+- **Notifications** — Telegram Bot API
+
+---
+
+*"Success is the sum of small efforts, repeated day in and day out."*
