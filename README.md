@@ -16,11 +16,12 @@ Scan the QR code below to access the live dashboard on your phone:
 
 ## 📊 Progress Dashboard
 - **Current Focus:** 🇬🇧 London Workplace & Social Idioms
-- **Daily Streak:** 🔥 207 Days
-- **Last Updated:** 2026-10-03
+- **Daily Streak:** 🔥 208 Days
+- **Last Updated:** 2026-10-04
 
 ## 📅 Monthly Lessons
 ### 2026 February
+- **[Oct 04: **Mishandling**](lessons/vocabulary_2026-10-04.md)**
 - **[Oct 03: **Coordinated**](lessons/vocabulary_2026-10-03.md)**
 - **[Oct 02: **Commute**](lessons/vocabulary_2026-10-02.md)**
 - **[Oct 01: **Syringe**](lessons/vocabulary_2026-10-01.md)**
